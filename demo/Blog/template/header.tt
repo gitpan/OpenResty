@@ -1,0 +1,35 @@
+[% DEFAULT
+      blog_name  = 'Foo\'s blog',
+      blog_desc  = 'This is my blog'
+      js_files = [
+        'JSON.js',
+        'dojo.openresty.js',
+        'openresty.js',
+        'jquery.js',
+        'Jemplate.js',
+        'jemplates.js',
+        'blog.js',
+      ]
+-%]
+<head>
+    <title>[% blog_name %]</title>
+
+    <meta name="description" content="[% blog_desc %]" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="generator" content="http://www.typepad.com/" />
+
+    [%- FOREACH js_file IN js_files %]
+        <script type="text/javascript" src="[% js_file %]"></script>
+    [%- END %]
+
+    <link rel="stylesheet" href="blog.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="styles.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="themes/common/print.css" type="text/css" media="print" />
+    <!-- <link rel="alternate" type="application/atom+xml" title="Posts on 'Human & Machine' (Atom)" href="http://agentzh.spaces.live.com/feed.atom" /> -->
+    <link rel="alternate" type="application/rss+xml" title="Posts on 'Human & Machine' (RSS 1.0)" href="http://agentzh.spaces.live.com/feed.rss" />
+    <!-- <link rel="alternate" type="application/rss+xml" title="Posts on 'Pugs' (RSS 2.0)" href="http://pugs.blogs.com/pugs/rss.xml" /> -->
+    <!-- <link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://ced02.search.cnb.yahoo.com/=/feed/BlogPost" /> -->
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="http://agentzh.spaces.live.com/feed.rss" />
+
+</head>
+
