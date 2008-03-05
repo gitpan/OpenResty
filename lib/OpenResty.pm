@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.000008';
+our $VERSION = '0.000009';
 
 use strict;
 use warnings;
@@ -508,7 +508,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.0.8 released on Mar 5, 2008.
+This document describes OpenResty 0.0.9 released on Mar 5, 2008.
 
 =head1 DESCRIPTION
 
@@ -702,7 +702,7 @@ us know. :)
 
 =over
 
-=item agentzh C<< <agentzh at yahoo.cn> >>
+=item Agent Zhang (agentzh) C<< <agentzh at yahoo.cn> >>
 
 =item leiyh
 
@@ -725,5 +725,5 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 =head1 SEE ALSO
 
-L<WWW::OpenResty>, L<WWW::OpenResty::Simple>.
+L<OpenResty::Spec::REST>, L<OpenResty::CheatSheet>, L<WWW::OpenResty>, L<WWW::OpenResty::Simple>.
 
