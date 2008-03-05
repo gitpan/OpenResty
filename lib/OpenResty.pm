@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.000007';
+our $VERSION = '0.000008';
 
 use strict;
 use warnings;
@@ -504,11 +504,11 @@ __END__
 
 =head1 NAME
 
-OpenResty - General-Purpose Web Services for Web Applications
+OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.0.7 released on Mar 5, 2008.
+This document describes OpenResty 0.0.8 released on Mar 5, 2008.
 
 =head1 DESCRIPTION
 
@@ -516,9 +516,11 @@ This module implements the server-side OpenResty web service protocol. It provid
 
 Currently this module can serve as a public web interface to a distributive or desktop PostgreSQL databases. In particular, it provides models, views, roles, captchas to the users.
 
+But note that OpenResty is I<not> a web application framework like L<Jifty>.
+
 We're already running an instance of the OpenResty server on our Yahoo! China's production machines:
 
-    http://resty.eeeeworks.org/=/version
+L<http://resty.eeeeworks.org/=/version>
 
 And there're several (pure-client-side) web sites alreadying taking advantage of the services:
 
