@@ -1,6 +1,6 @@
 define CMDS
     -perl bin/revision.pl
-    -perl -Iblib -c bin/openresty.pl
+    -perl -Iblib -c bin/openresty
     -sudo killall lighttpd
     sudo /etc/init.d/lighttpd restart
     rm  -f t/cur-timer.dat
@@ -8,10 +8,7 @@ define CMDS
     bin/perf
 endef
 
-all: doc/spec.html doc/spec_cn.html lib/OpenResty/MiniSQL/Select.pm
-
-doc/%.html: doc/%.pod
-	podhtm.pl --index --charset UTF-8 --css perl.css -o $@ $<
+all: lib/OpenResty/MiniSQL/Select.pm
 
 lib/OpenResty/MiniSQL/Select.pm: grammar/Select.yp
 	yapp -m OpenResty::MiniSQL::Select -o $@ $<

@@ -5,7 +5,6 @@ use warnings;
 
 #use Smart::Comments '####';
 use Cookie::XS;
-use Data::UUID;
 use OpenResty::Limits;
 use OpenResty::Cache;
 use OpenResty;
@@ -39,7 +38,7 @@ my %Dispatcher = (
     version => [ qw< version > ],
 );
 
-my $url_prefix = $ENV{OPENAPI_URL_PREFIX};
+my $url_prefix = $ENV{OPENRESTY_URL_PREFIX};
 if ($url_prefix) {
     $url_prefix =~ s{^/+|/+$}{}g;
 }
@@ -51,6 +50,8 @@ sub init {
         $OpenResty::Cache = OpenResty::Cache->new;
         OpenResty->connect($backend);
     };
+    if ($@) { $InitFatal = $@; }
+
     if (my $filtered = $OpenResty::Config{'frontend.filtered'}) {
         #warn "HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         use lib "$FindBin::Bin/../../../openresty-filter-qp/trunk/lib";
@@ -61,9 +62,6 @@ sub init {
         }
         #### %OpenResty::AccountFiltered
         ### $filtered
-    }
-    if ($@) {
-        $InitFatal = $@;
     }
 }
 
