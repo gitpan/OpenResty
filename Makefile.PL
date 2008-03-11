@@ -21,6 +21,7 @@ version($version);
 requires            ('Cookie::XS' => '0.06');
 requires            ('FCGI');
 requires            ('CGI::Simple' => '1.103');
+requires            ('CGI::Simple::Cookie');
 requires            ('YAML::Syck' => '1.04');
 requires            ('List::Util');
 requires            ('DBI' => '1.57');
@@ -33,6 +34,7 @@ requires            ('GD::SecurityImage' => '1.64');
 requires            ('Cache::Memcached::Fast' => '0.06');
 requires            ('Hash::Merge');
 requires            ('Config::Simple');
+requires            ('Encode::Guess');
 
 if ($arg eq 'product') {
     features(
@@ -91,7 +93,12 @@ if (!-e $site_conf) {
 }
 
 system("$^X bin/revision.pl");
-system("$^X bin/fetch-font.pl");
+
+print STDERR "Download the Chinese font file (14 MB) from agentzh.org to get Chinese captcha support? [n]";
+my $ans = <STDIN>;
+if ($ans =~ /y/i) {
+    system("$^X bin/fetch-font.pl");
+}
 
 WriteAll();
 

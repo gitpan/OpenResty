@@ -7,14 +7,60 @@ use File::Slurp;
 use List::Util 'first';
 use IPC::Run3;
 
-my ($stdout, $stderr);
-
 sub run ($);
 sub run_and_check ($);
 sub file_found ($@);
 sub file_contains ($$);
 
-##
+sub check_deps {
+    system('rm -f /tmp/deps.txt');
+    for my $dir (qw( lib t script bin )) {
+        next if !-d $dir;
+        my $cmd =
+            q{ grep -E '^\s*use (\w+::)*\w+' -r } .
+            $dir .
+            q{ | grep -Ev 'use strict|use warnings|~:' | }.
+            q{ sed 's/^[^:]*:\s*use //g' | }.
+            q{ sed 's/^base ''//' | }.
+            q{ sed 's/^base qw//' | }.
+            q{ sed 's/^base "//' | }.
+            q{ sed 's/ qw.*//g' | sed 's/ ''.*//' | sed 's/[^A-Za-z0-9_:]*//g' | sort | uniq | }.
+            q{ grep -vE '^(constant|subs|overload|lib|Cwd|Carp|List::Util|Encode|FindBin|vars|utf8|File::Copy|Clone|File::Spec|File::stat|File::Temp|Getopt::Std|Getopt::Long|Exporter|Data::Dumper)$' }.
+            q{ >> /tmp/deps.txt };
+        #warn $cmd, "\n";
+        system($cmd);
+    }
+    my $cmd = "cat /tmp/deps.txt | sort | uniq";
+    my $output = `$cmd`;
+    my @mod = split /\n/, $output;
+    my @deps;
+    for my $mod (@mod) {
+        $mod =~ s/^qw//g;
+        (my $path = $mod) =~ s/::/\//g;
+        my $found = undef;
+        for my $dir (qw(lib inc . t/lib)) {
+            my $file = "$dir/$path.pm";
+            #warn $file, "\n";
+            if (-f $file) {
+                $found = 1;
+                last;
+            }
+        }
+        push @deps, $mod unless $found;
+    }
+    for my $dep (@deps) {
+        #print $dep, "\n";
+        if (!file_contains('Makefile.PL', qr/^[^#]*['"]\Q$dep\E['"]/)) {
+            warn "WARNING: Prereq $dep not mentioned in Makefile.PL\n";
+        }
+    }
+    #write_file('/tmp/deps.txt', join "\n", @deps);
+    #system(q{ grep -f /tmp/deps.txt Makefile.PL });
+}
+
+my ($stdout, $stderr);
+
+#
 # check missing files
 file_found 'Makefile.PL';
 file_found 'MANIFEST';
@@ -63,11 +109,11 @@ for my $file (map glob, qw{ lib/*.pm lib/*/*.pm lib/*/*/*.pm lib/*/*/*/*.pm lib/
         my $ver;
         if (/(?x) \$VERSION \s* = .*? ([\d\.]*\d+)/) {
             my $orig_ver = $ver = $1;
-            $ver =~ s{^(\d+)\.(\d{3})(\d{3})?$}{join '.', int($1), int($2), int($3||0)}e;
+            $ver =~ s{^(\d+)\.(\d{3})(\d{3})$}{join '.', int($1), int($2), int($3)}e;
             warn "$file: $orig_ver ($ver)\n";
         } elsif (/This document describes \S+ ([\d\.]*\d+)/) {
             my $orig_ver = $ver = $1;
-            $ver =~ s{^(\d+)\.(\d{3})(\d{3})?$}{join '.', int($1), int($2), int($3||0)}e;
+            $ver =~ s{^(\d+)\.(\d{3})(\d{3})$}{join '.', int($1), int($2), int($3)}e;
             warn "$file: $orig_ver ($ver)\n";
         } elsif (/^version: (\d+.*)$/) {
             $ver = $1;
@@ -85,12 +131,21 @@ for my $file (map glob, qw{ lib/*.pm lib/*/*.pm lib/*/*/*.pm lib/*/*/*/*.pm lib/
     close $in;
 }
 
-$version =~ s{^(\d+)\.(\d{3})(\d{3})?$}{join '.', int($1), int($2), int($3||0)}e;
+$version =~ s{^(\d+)\.(\d{3})(\d{3})$}{join '.', int($1), int($2), int($3)}e;
 if (! file_contains 'Changes', qr/\b\Q$version\E\b/) {
     die "ERROR: File 'Changes' has nothing regarding release $version\n";
 }
-
 run_and_check "pod2text $main_pm > README";
+
+my $bin = -d 'bin' ? 'bin' : (-d 'script' ? 'script' : '');
+
+system(
+    q{grep -E '^\\s*use Smart::Comments' } .
+    ($bin ? "`ls $bin/* | grep -v '~\$' | grep -v '.swp\$'`" : " ") .
+    q{ `find -name '*.pm'` `find -name '*.t'`}
+);
+
+check_deps();
 
 my ($tests, $dist_tests);
 

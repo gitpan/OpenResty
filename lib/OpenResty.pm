@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.000010';
+our $VERSION = '0.001000';
 
 use strict;
 use warnings;
@@ -259,6 +259,7 @@ sub init {
 
 sub fatal {
     my ($self, $s) = @_;
+    #warn "fatal-ing...: $s\n";
     $self->error($s);
     $self->response();
 }
@@ -375,7 +376,9 @@ sub connect {
     my $self = shift;
     my $name = shift || $BackendName;
     $BackendName = $name;
+    #warn "connect: $BackendName\n";
     $Backend = OpenResty::Backend->new($name);
+    #warn "Backend: $Backend\n";
     #$Backend->select("");
 }
 
@@ -509,7 +512,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.0.10 released on March 6, 2008.
+This document describes OpenResty 0.1.0 released on March 11, 2008.
 
 =head1 DESCRIPTION
 
@@ -574,13 +577,15 @@ Edit your F<etc/site_openresty.conf> file, change the configure settings
 under [backend] section according to your previous settings. The default settings look like this:
 
     [backend]
-    type=Pg
+    recording=0
+    # You should change the line below to type=Pg or type=PgFarm
+    type=PgMocked
     host=localhost
     user=agentzh
     password=agentzh
     database=test
 
-Most of the time, you need to change the last 3 lines unless you're using exactly the same user, password, and database name.
+Most of the time, you need to change C<type=PgMocked> to C<type=Pg>, as well as the last 3 lines (unless you're using exactly the same user, password, and database name). The default "PgMocked" backend is a mocked PostgreSQL database which is useful only for testing purposes.
 
 =item 4.
 
