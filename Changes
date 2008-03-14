@@ -1,5 +1,5 @@
-0.1.4 Mar 14 2008
-* Removed the version number for OpenResty::FastCGI to amuse the PAUSE indexer.
+0.1.5 Mar 14 2008
+* Fixed the version number for OpenResty::FastCGI to amuse the PAUSE indexer.
 
 0.1.2 Mar 14 2008
 * Added much more stuffs to CheatSheet.

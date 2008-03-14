@@ -1,7 +1,6 @@
 package OpenResty::FastCGI;
 
-our $VERSION =
-'1.07';
+our $VERSION='1.07';  # SKIP
 
 use FCGI;
 use base 'CGI::Simple';
