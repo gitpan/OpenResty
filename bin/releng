@@ -24,6 +24,8 @@ sub check_deps {
             q{ sed 's/^base ''//' | }.
             q{ sed 's/^base qw//' | }.
             q{ sed 's/^base "//' | }.
+            q{ sed 's/L<//g' | }.
+            q{ sed 's/>.*//g' | }.
             q{ sed 's/ qw.*//g' | sed 's/ ''.*//' | sed 's/[^A-Za-z0-9_:]*//g' | sort | uniq | }.
             q{ grep -vE '^(constant|subs|overload|lib|Cwd|Carp|List::Util|Encode|FindBin|vars|utf8|File::Copy|Clone|File::Spec|File::stat|File::Temp|Getopt::Std|Getopt::Long|Exporter|Data::Dumper)$' }.
             q{ >> /tmp/deps.txt };
