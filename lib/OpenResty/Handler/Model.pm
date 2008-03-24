@@ -7,6 +7,7 @@ use warnings;
 use OpenResty::Util;
 use List::Util qw( first );
 use Params::Util qw( _STRING _ARRAY0 _ARRAY _HASH );
+use JSON::Syck ();
 use OpenResty::Limits;
 use Clone 'clone';
 
@@ -14,6 +15,7 @@ sub check_type {
     my $type = shift;
     if ($type !~ m{^ \s*
                 (
+                    boolean |
                     text |
                     integer |
                     serial |
@@ -365,7 +367,7 @@ sub new_model {
     if (%$data) {
     my @key = sort(keys %$data);
         die "Unrecognized keys in model schema 'TTT': ",
-            join(", ", @key),"\n";
+            join(", ", map { JSON::Syck::Dump($_) } @key), "\n";
     }
     my $i = 1;
     if ($openresty->has_model($model)) {
@@ -617,7 +619,7 @@ sub insert_records {
     my $user = $openresty->current_user;
     ### %AccountFiltered
     if ($OpenResty::AccountFiltered{$user}) {
-        my $str = JSON::Syck::Dump(clone($data));
+        my $str = $OpenResty::Dumper->(clone($data));
         #die $val;
         #die "aaaa";
         OpenResty::Filter::QP->filter($str);
@@ -721,6 +723,8 @@ sub select_records {
     }
     my $select = OpenResty::SQL::Select->new;
     $select->from(QI($table));
+    #warn "VAL: $val\n";
+    #warn "IS UTF8???";
     if (defined $val and $val ne '~') {
         my $op = $openresty->{_cgi}->url_param('op') || 'eq';
         $op = $OpenResty::OpMap{$op};
@@ -744,6 +748,9 @@ sub select_records {
     $self->process_offset($openresty, $select);
     $self->process_limit($openresty, $select);
 
+    #use Data::Dumper;
+    #warn Dumper($select->{where});
+    #warn "SQL: ", $select->generate, "\n";
     my $res = $openresty->select("$select", { use_hash => 1 });
     if (!$res and !ref $res) { return []; }
     return $res;

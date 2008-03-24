@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.001008';
+our $VERSION = '0.001009';
 
 use strict;
 use warnings;
@@ -8,7 +8,7 @@ use warnings;
 #use Smart::Comments;
 use Data::UUID;
 use YAML::Syck ();
-use JSON::Syck ();
+use JSON::XS ();
 
 use List::Util qw(first);
 use Params::Util qw(_HASH _STRING _ARRAY0 _ARRAY _SCALAR);
@@ -36,13 +36,15 @@ use OpenResty::Handler::Captcha;
 use OpenResty::Handler::Version;
 use Encode::Guess;
 
-$YAML::Syck::ImplicitUnicode = 1;
+#$YAML::Syck::ImplicitUnicode = 1;
 #$YAML::Syck::ImplicitBinary = 1;
 
 our ($Backend, $BackendName);
 our %AccountFiltered;
 our $Cache;
 our $UUID = Data::UUID->new;
+
+our $JsonXs = JSON::XS->new->utf8->allow_nonref;
 
 our %OpMap = (
     contains => 'like',
@@ -57,8 +59,8 @@ our %OpMap = (
 our %ext2dumper = (
     '.yml' => \&YAML::Syck::Dump,
     '.yaml' => \&YAML::Syck::Dump,
-    '.js' => \&JSON::Syck::Dump,
-    '.json' => \&JSON::Syck::Dump,
+    '.js' => sub { $JsonXs->encode($_[0]) },
+    '.json' => sub { $JsonXs->encode($_[0]) },
 );
 
 our %EncodingMap = (
@@ -71,20 +73,25 @@ our %EncodingMap = (
 our %ext2importer = (
     '.yml' => \&YAML::Syck::Load,
     '.yaml' => \&YAML::Syck::Load,
-    '.js' => \&JSON::Syck::Load,
-    '.json' => \&JSON::Syck::Load,
+    '.js' => sub { $JsonXs->decode($_[0]) },
+    '.json' => sub { $JsonXs->decode($_[0]) },
 );
 
 our $Ext = qr/\.(?:js|json|xml|yaml|yml)/;
 our ($Dumper, $Importer);
-$Dumper = \&JSON::Syck::Dump;
-$Importer = \&JSON::Syck::Load;
+$Dumper = $ext2dumper{'.js'};
+$Importer = $ext2importer{'.js'};
+
+sub version {
+    (my $ver = $OpenResty::VERSION) =~ s{^(\d+)\.(\d{3})(\d{3})?$}{join '.', int($1), int($2), int($3)}e;
+    $ver;
+}
 
 # XXX more data types...
 sub parse_data {
     shift;
     if (!$Importer) {
-        $Importer = \&JSON::Syck::Load;
+        $Importer = $ext2importer{'.js'};
     }
     return $Importer->($_[0]);
 }
@@ -100,10 +107,12 @@ sub init {
     my $cgi = $self->{_cgi};
 
     my $db_state = $Backend->state;
+    #warn "DB state: $db_state\n";
     if ($db_state && $db_state =~ /^(?:08|57)/) {
         eval { $Backend->disconnect };
         my $backend = $OpenResty::Config{'backend.type'};
         OpenResty->connect($backend);
+        warn "Re-connecting the database...\n";
         #die "Backend connection lost: ", $db_state, "\n";
     }
 
@@ -178,8 +187,10 @@ sub init {
 
     my $url = $$rurl;
     eval {
-        from_to($url, $charset, 'UTF-8');
+        from_to($url, $charset, 'utf8');
     };
+    warn $@ if $@;
+    #warn $url;
 
     $url =~ s{/+$}{}g;
     $url =~ s/\%2A/*/g;
@@ -269,7 +280,7 @@ sub error {
     if (!$OpenResty::Config{'frontend.debug'} && $s =~ /^DBD::Pg::(?:db|st) \w+ failed:/) {
         $s = 'Operation failed.';
     }
-    $s =~ s/^Syck parser \(line (\d+), column (\d+)\): syntax error at .+/Syntax error found in the JSON input: line $1, column $2./;
+    $s =~ s/(.+) at \S+\/OpenResty\.pm line \d+(?:, <DATA> line \d+)?\./Syntax error found in the JSON input: $1./;
     #$s =~ s/^DBD::Pg::db do failed:\s.*?ERROR:\s+//;
     $self->{_error} .= $s . "\n";
 
@@ -332,14 +343,17 @@ sub response {
         #$str = decode_utf8($str);
         #if (is_utf8($str)) {
             #} else {
-        $str = $Backend->encode_string($str, $charset);
+            #warn "Encoding: $charset\n";
+        from_to($str, 'utf8', $charset);
             #$str = decode('UTF-8', $str);
             #$str = encode($charset, $str);
             #}
-    }; #warn $@ if $@;
-    if (my $var = $self->{_var} and $Dumper eq \&JSON::Syck::Dump) {
+    }; warn $@ if $@;
+    #warn $Dumper;
+    #warn $ext2dumper{'.js'};
+    if (my $var = $self->{_var} and $Dumper eq $ext2dumper{'.js'}) {
         $str = "$var=$str;";
-    } elsif (my $callback = $self->{_callback} and $Dumper eq \&JSON::Syck::Dump) {
+    } elsif (my $callback = $self->{_callback} and $Dumper eq $ext2dumper{'.js'}) {
         $str = "$callback($str);";
     }
     $str =~ s/\n+$//s;
@@ -367,7 +381,7 @@ sub response {
 
 sub set_formatter {
     my ($self, $ext) = @_;
-    $ext ||= '.json';
+    $ext ||= '.js';
     $Dumper = $ext2dumper{$ext};
     $Importer = $ext2importer{$ext};
 }
@@ -384,7 +398,8 @@ sub connect {
 
 sub emit_data {
     my ($self, $data) = @_;
-    return $Dumper->($data);
+    #warn "$data";
+    return eval { $Dumper->($data); }
 }
 
 sub has_role {
@@ -412,7 +427,7 @@ sub current_user_can {
     } continue { $max_i-- }
     map { $_ = '/=/' . join '/', @$_ } @urls;
     my $or_clause = join ' or ', map { "url = ".Q($_) } @urls;
-    my $sql = "select count(*) from _access_rules where role = ".
+    my $sql = "select count(*) from _access where role = ".
         Q($role) . " and method = " . Q($meth) . " and ($or_clause);";
     ### $sql
     my $res = $self->select($sql);
@@ -512,7 +527,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.1.8 released on March 18, 2008.
+This document describes OpenResty 0.1.9 released on March 24, 2008.
 
 =head1 DESCRIPTION
 

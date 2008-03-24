@@ -68,11 +68,11 @@ GET /=/model.js
 --- request
 POST /=/model/Bookmark.js
 {
-    description: "我的书签",
-    columns: [
-        { name: "id", type: "serial", label: "ID" },
-        { name: "title", label: "标题" },
-        { name: "url", label: "网址" }
+    "description": "我的书签",
+    "columns": [
+        { "name": "id", "type": "serial", "label": "ID" },
+        { "name": "title", "label": "标题" },
+        { "name": "url", "label": "网址" }
     ]
 }
 --- response
@@ -116,7 +116,7 @@ GET /=/model/Foo.js
 === TEST 12: insert a single record
 --- request
 POST /=/model/Bookmark/~/~
-{ title: "Yahoo Search", url: 'http://www.yahoo.cn' }
+{ "title": "Yahoo Search", "url": "http://www.yahoo.cn" }
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/Bookmark/id/1"}
 
@@ -125,7 +125,7 @@ POST /=/model/Bookmark/~/~
 === TEST 13: insert another record
 --- request
 POST /=/model/Bookmark/~/~.js
-{ title: "Yahoo Search", url: 'http://www.yahoo.cn' }
+{ "title": "Yahoo Search", "url": "http://www.yahoo.cn" }
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/Bookmark/id/2"}
 
@@ -135,9 +135,9 @@ POST /=/model/Bookmark/~/~.js
 --- request
 POST /=/model/Bookmark/~/~.js
 [
-    { title: "Google搜索", url: "http://www.google.cn" },
-    { url: "http://www.baidu.com" },
-    { title: "Perl.com", url: "http://www.perl.com" }
+    { "title": "Google搜索", "url": "http://www.google.cn" },
+    { "url": "http://www.baidu.com" },
+    { "title": "Perl.com", "url": "http://www.perl.com" }
 ]
 --- response
 {"success":1,"rows_affected":3,"last_row":"/=/model/Bookmark/id/5"}
@@ -218,7 +218,7 @@ GET /=/model/Bookmark/id/2.js
 === TEST 22: update a nonexistent record
 --- request
 PUT /=/model/Bookmark/id/2.js
-{ title: "Blah blah blah" }
+{ "title": "Blah blah blah" }
 --- response
 {"success":0,"rows_affected":0}
 
@@ -227,7 +227,7 @@ PUT /=/model/Bookmark/id/2.js
 === TEST 23: update an existent record
 --- request
 PUT /=/model/Bookmark/id/3.js
-{ title: "Blah blah blah" }
+{ "title": "Blah blah blah" }
 --- response
 {"success":1,"rows_affected":1}
 
@@ -244,7 +244,7 @@ GET /=/model/Bookmark/id/3.js
 === TEST 25: update an existent record using POST
 --- request
 POST /=/put/model/Bookmark/id/3.js?last_response=1234
-{ title: "Howdy!" }
+{ "title": "Howdy!" }
 --- response
 {"success":1,"rows_affected":1}
 
@@ -309,9 +309,9 @@ GET /=/last/response/1234
 === TEST 33: Change the name of the model
 --- request
 PUT /=/model/Bookmark.js?last_response=hello,world
-{ name: "MyFavorites", description: "我的最爱" }
+{ "name": "MyFavorites", "description": "我的最爱" }
 --- response
-{"success":1}
+{"success":"1"}
 
 
 
@@ -319,7 +319,7 @@ PUT /=/model/Bookmark.js?last_response=hello,world
 --- request
 GET /=/last/response/hello,world
 --- response
-{"success":1}
+{"success":"1"}
 
 
 
@@ -343,7 +343,7 @@ GET /=/model/MyFavorites.js
 === TEST 36: Change the name and type of title
 --- request
 PUT /=/model/MyFavorites/title
-{ name: "count", type: "text" }
+{ "name": "count", "type": "text" }
 --- response
 {"success":1}
 
@@ -365,41 +365,50 @@ GET /=/model/MyFavorites/count
 
 
 
-=== TEST 39: Change the name and type of title to incompactible types
+=== TEST 39: Create a new column of the boolean type
+--- request
+POST /=/model/MyFavorites/~
+{ "name": "disabled", "type": "boolean", "label": "Disabled" }
+--- response
+{"success":1,"src":"/=/model/MyFavorites/disabled"}
+
+
+
+=== TEST 40: Change the name and type of title to incompactible types
 --- debug: 1
 --- request
 PUT /=/model/MyFavorites/count
-{ name: "count", type: "real" }
+{ "name": "count", "type": "real" }
 --- response_like
 ^{"success":0,"error":"DBD::Pg::db (?:do|selectall_arrayref) failed:.*
 
 
 
-=== TEST 40: Change the name and type of title to incompactible types
+=== TEST 41: Change the name and type of title to incompactible types
 --- debug: 0
 --- request
 PUT /=/model/MyFavorites/count
-{ name: "count", type: "real" }
+{ "name": "count", "type": "real" }
 --- response
 {"success":0,"error":"Operation failed."}
 
 
 
-=== TEST 41: Change the name and type of title to incompactible types
+=== TEST 42: Change the name and type of title to incompactible types
 --- debug: 1
 --- request
 PUT /=/model/MyFavorites/count
-{ type: "real" }
+{ "type": "real" }
 --- response_like
 ^{"success":0,"error":"DBD::Pg::db (?:do|selectall_arrayref) failed:.*
 
 
 
-=== TEST 42: Change the name and type of title to incompactible types
+=== TEST 43: Change the name and type of title to incompactible types
 --- debug: 0
 --- request
 PUT /=/model/MyFavorites/count
-{ type: "real" }
+{ "type": "real" }
 --- response
 {"success":0,"error":"Operation failed."}
 

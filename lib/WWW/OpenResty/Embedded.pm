@@ -54,13 +54,13 @@ sub get {
 
 sub post {
     my $self = shift;
-    my $content = shift;
+    my $content = pop;
     $self->request($content, 'POST', @_);
 }
 
 sub put {
     my $self = shift;
-    my $content = shift;
+    my $content = pop;
     $self->request($content, 'PUT', @_);
 }
 
@@ -119,6 +119,9 @@ sub _request {
     my $uri = $req->uri;
     #$uri =~ s/ /\%20/g;
     $uri =~ s/^http:\/\/[^\/]+//;
+    if (is_utf8($uri)) {
+        $uri = encode('utf8', $uri);
+    }
     $ENV{REQUEST_URI} = $uri;
 
     if (%Cookies) {
@@ -136,7 +139,7 @@ sub _request {
     my $code;
     #warn $Buffer;
     if (is_utf8($Buffer)) {
-        $Buffer = encode('UTF-8', $Buffer);
+        $Buffer = encode('utf8', $Buffer);
     }
     if ($Buffer =~ /^HTTP\/1\.[01] (\d+) (\w+)\n/) {
         $code = $1;

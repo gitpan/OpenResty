@@ -4,13 +4,9 @@ use strict;
 use warnings;
 
 #use Smart::Comments;
+use JSON::XS;
 use DBI;
-use JSON::Syck 'Load';
-use Encode 'encode';
 use base 'OpenResty::Backend::Base';
-
-$YAML::Syck::ImplicitUnicode = 1;
-$JSON::Syck::ImplicitUnicode = 1;
 
 our ($Host, $User, $Password, $Port);
 
@@ -30,36 +26,33 @@ sub new {
         "dbi:Pg:dbname=proxy host=$Host".
             ($Port ? ";port=$Port" : ""),
         $User, $Password,
-        {AutoCommit => 1, RaiseError => 1, pg_enable_utf8 => 1, %$opts, PrintError => 0}
+        {AutoCommit => 1, RaiseError => 1, %$opts, PrintError => 0}
     );
     return bless {
         dbh => $dbh
     }, $class;
 }
 
-sub encode_string {
-    my ($self, $str, $charset) = @_;
-    encode($charset, $str);
-}
-
 sub select {
     my ($self, $sql, $opts) = @_;
+    #warn "SQL: $sql";
     $opts ||= {};
     my $type = $opts->{use_hash} ? 1 : 0;
     my $readonly = $opts->{read_only} ? 1 : 0;
     $sql = $self->quote($sql);
     #warn "==================> $sql\n";
     my $sql_cmd = "select xquery('$self->{user}', $sql, $type, $readonly)";
+    #warn $sql_cmd, "\n";
     #warn "------------------> $sql_cmd";
     my $dbh = $self->{dbh};
     my $res = $dbh->selectall_arrayref($sql_cmd);
     ### JSON: $res->[0][0]
     my $json = $res->[0][0];
     eval {
-        $res = Load($json);
+        $res = decode_json($json);
     };
     if ($@) {
-        die "Failed to load JSON from PgFarm: $@\n$json";
+        die "Failed to load JSON from PgFarm's response: $@\n$json";
     }
     return $res;
 }
@@ -113,17 +106,23 @@ sub set_user {
 sub add_user {
     my $self = shift;
     my $user = shift;
-    my $retval = $self->{dbh}->do(<<"_EOC_");
-    SELECT useradd('$user','');
-    -- grant usage on schema $user to anonymous;
-_EOC_
+    my $retval = $self->add_empty_user($user);
     $self->set_user($user);
     $self->SUPER::add_user($user, @_);
     return $retval >= 0;
 }
 
+sub add_empty_user {
+    my ($self, $user) = @_;
+    $self->{dbh}->do(<<"_EOC_");
+        SELECT useradd('$user','');
+        -- grant usage on schema $user to anonymous;
+_EOC_
+}
+
 sub drop_user {
     my ($self, $user) = @_;
+    $self->SUPER::drop_user($user);
     my $retval = $self->{dbh}->do(<<"_EOC_");
     SELECT userdel('$user','');
 _EOC_

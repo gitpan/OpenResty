@@ -3,10 +3,10 @@ package OpenResty::Backend::Pg;
 use strict;
 use warnings;
 
+#use Smart::Comments;
 use DBI;
 use OpenResty::SQL::Select;
 use base 'OpenResty::Backend::Base';
-use Encode 'from_to';
 
 our $Recording;
 our ($Host, $User, $Password, $Port, $Database);
@@ -55,12 +55,6 @@ END {
     }
 }
 
-sub encode_string {
-    my ($self, $str, $charset) = @_;
-    from_to($str, 'UTF-8', $charset);
-    $str;
-}
-
 sub select {
     my ($self, $sql, $opts) = @_;
     $opts ||= {};
@@ -72,6 +66,9 @@ sub select {
     if ($Recording) {
         OpenResty::Backend::PgMocked->record($sql => $res);
     }
+
+    ### $res
+    ## SELECT RES: $OpenResty::Dumper->($res)
     return $res;
 }
 
@@ -125,15 +122,21 @@ sub set_user {
 sub add_user {
     my $self = shift;
     my $user = shift;
+    $self->add_empty_user($user);
+    $self->SUPER::add_user($user, @_);
+}
+
+sub add_empty_user {
+    my ($self, $user) = @_;
     $self->do(<<"_EOC_");
 create schema $user;
 set search_path to $user;
 _EOC_
-    $self->SUPER::add_user($user, @_);
 }
 
 sub drop_user {
     my ($self, $user) = @_;
+    $self->SUPER::drop_user($user);
     $self->do(<<"_EOC_");
 drop schema $user cascade
 _EOC_

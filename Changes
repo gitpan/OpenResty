@@ -1,3 +1,8 @@
+0.1.9 Mar 24 2008
+* Implemented the MetaModel automatic upgrading mechanism.
+* Using MetaModel 0.001 now.
+* Switched to JSON::XS from JSON::Syck for JSON input/output.
+
 0.1.8 Mar 18 2008
 * Fixed a typo in Base.pm
 

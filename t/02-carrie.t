@@ -68,10 +68,10 @@ DELETE /=/model
 --- request
 POST /=/model/Carrie.js
 {
-    description: "我的书签",
-    columns: [
-        { name: "title", label: "标题" },
-        { name: "url", label: "网址" }
+    "description": "我的书签",
+    "columns": [
+        { "name": "title", "label": "标题" },
+        { "name": "url", "label": "网址" }
     ]
 }
 --- response
@@ -90,7 +90,7 @@ GET /=/model.js
 === TEST 10: insert a record 
 --- request
 POST /=/model/Carrie/~/~.js
-{ title:'hello carrie',url:"http://www.carriezh.cn/"}
+{ "title":"hello carrie","url":"http://www.carriezh.cn/"}
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/Carrie/id/1"}
 
@@ -107,7 +107,7 @@ GET /=/model/Carrie/url/http://www.carriezh.cn/.js
 === TEST 12: insert another record
 --- request
 POST /=/model/Carrie/~/~.js
-{ title:'second',url:"http://zhangxiaojue.cn"}
+{ "title":"second","url":"http://zhangxiaojue.cn"}
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/Carrie/id/2"}
 
@@ -165,7 +165,7 @@ GET /=/delete/model/Carrie/id/2.js
 === TEST 18: insert another record
 --- request
 POST /=/model/Carrie/~/~.js
-{ title:'second',url:"http://zhangxiaojue.cn"}
+{ "title":"second","url":"http://zhangxiaojue.cn"}
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/Carrie/id/3"}
 
@@ -215,10 +215,10 @@ GET /=/model?user=$TestAccount.Admin&password=$TestPass
 --- request
 POST /=/model/Test2?user=$TestAccount&password=$TestPass
 {
-    description: "我的书签",
-    columns: [
-        { name: "title", label: "标题" },
-        { name: "url", label: "网址" }
+    "description": "我的书签",
+    "columns": [
+        { "name": "title", "label": "标题" },
+        { "name": "url", "label": "网址" }
     ]
 }
 --- response
@@ -229,7 +229,7 @@ POST /=/model/Test2?user=$TestAccount&password=$TestPass
 === TEST 25: insert another record
 --- request
 POST /=/model/Test2/~/~?user=$TestAccount&password=$TestPass
-{ title:'second',url:"http://zhangxiaojue.cn"}
+{ "title":"second","url":"http://zhangxiaojue.cn"}
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/Test2/id/1"}
 
@@ -262,7 +262,7 @@ GET /=/delete/Test2/~/~?user=$TestAccount&password=$TestPass
 === TEST 29: insert another record
 --- request
 POST /=/model/Test2/~/~?user=$TestAccount&password=$TestPass
-{ title:'second',url:"http://zhangxiaojue.cn"}
+{ "title":"second","url":"http://zhangxiaojue.cn"}
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/Test2/id/2"}
 
@@ -292,7 +292,7 @@ GET /=/model/Test2/~/~?user=$TestAccount&password=$TestPass
 === TEST 32: Add column
 --- request
 POST /=/model/Test2/num?user=$TestAccount&password=$TestPass
-{ type:'integer',label:'num'}
+{ "type":"integer","label":"num"}
 --- response
 {"success":1,"src":"/=/model/Test2/num"}
 
@@ -301,7 +301,7 @@ POST /=/model/Test2/num?user=$TestAccount&password=$TestPass
 === TEST 33: Update records
 --- request
 POST /=/put/model/Test2/~/~?user=$TestAccount&password=$TestPass
-{ num:1 }
+{ "num":1 }
 --- response
 {"success":1,"rows_affected":1}
 

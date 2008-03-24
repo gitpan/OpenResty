@@ -36,7 +36,7 @@ DELETE /=/model
 === TEST 3: insert data to an nonexistant model
 --- request
 POST /=/model/Dummy/~/~
-{ name: 'foo' }
+{ "name": "foo" }
 --- response
 {"success":0,"error":"Model \"Dummy\" not found."}
 
@@ -46,11 +46,11 @@ POST /=/model/Dummy/~/~
 --- request
 POST /=/model/Address
 {
-    description: "通讯录",
-    columns: [
-        { name: "id", type: "serial", label: "ID" },
-        { name: "name", label: "名称" },
-        { name: "addr", label: "地址" }
+    "description": "通讯录",
+    "columns": [
+        { "name": "id", "type": "serial", "label": "ID" },
+        { "name": "name", "label": "名称" },
+        { "name": "addr", "label": "地址" }
     ]
 }
 --- response
@@ -70,10 +70,10 @@ GET /=/model
 --- request
 POST /=/model/Address/~/~
 [
-    { name: "Google搜索", addr: "http://www.google.cn" },
-    { addr: "http://www.baidu.com" },
-    { name: "Perl", addr: "http://www.perl.com" },
-    { name: "Perl.com", addr: "Perl" }
+    { "name": "Google搜索", "addr": "http://www.google.cn" },
+    { "addr": "http://www.baidu.com" },
+    { "name": "Perl", "addr": "http://www.perl.com" },
+    { "name": "Perl.com", "addr": "Perl" }
 ]
 --- response
 {"success":1,"rows_affected":4,"last_row":"/=/model/Address/id/4"}
@@ -91,7 +91,7 @@ GET /=/model/Address/~/Perl
 === TEST 8: update id
 --- request
 PUT /=/model/Address/id/3
-{ id: 99}
+{ "id": 99}
 --- response
 {"success":0,"error":"Column \"id\" reserved."}
 
@@ -100,7 +100,7 @@ PUT /=/model/Address/id/3
 === TEST 9: Use special chars
 --- request
 PUT /=/model/Address/id/1
-{ name: "\"\\\"" }
+{ "name": "\"\\\"" }
 --- response
 {"success":1,"rows_affected":1}
 
@@ -117,7 +117,7 @@ GET /=/model/Address/id/1
 === TEST 11: Use special chars
 --- request
 PUT /=/model/Address/id/1
-{ addr: "\t\\\n" }
+{ "addr": "\t\\\n" }
 --- response
 {"success":1,"rows_affected":1}
 
@@ -146,4 +146,29 @@ PUT /=/model/Address/name/Perl?op=contain
 {"name":"Haskell"}
 --- response
 {"success":0,"rows_affected":0}
+
+
+
+=== TEST 15: insert a new row
+--- request
+POST /=/model/Address/~/~
+{"name":"安徽"}
+--- response
+{"success":1,"rows_affected":1,"last_row":"/=/model/Address/id/5"}
+
+
+
+=== TEST 16: Get that row out by name
+--- request
+GET /=/model/Address/name/安徽
+--- response
+[{"name":"安徽","id":"5","addr":null}]
+
+
+
+=== TEST 17: Get that row out by uri encoded name
+--- request
+GET /=/model/Address/name/%E5%AE%89%E5%BE%BD
+--- response
+[{"name":"安徽","id":"5","addr":null}]
 

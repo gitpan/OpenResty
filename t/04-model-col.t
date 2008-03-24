@@ -32,7 +32,7 @@ DELETE /=/model?user=$TestAccount&password=$TestPass&use_cookie=1
 === TEST 2: create a model
 --- request
 POST /=/model/laser
-{ description: "test model", columns: [{ name:"A",label:"A" }] }
+{ "description": "test model", "columns": [{ "name":"A","label":"A" }] }
 --- response
 {"success":1}
 
@@ -49,7 +49,7 @@ GET /=/model/laser/A
 === TEST 4: Add a new column
 --- request
 POST /=/model/laser/B
-{type:"integer",label:"b"}
+{"type":"integer","label":"b"}
 --- response
 {"success":1,"src":"/=/model/laser/B"}
 
@@ -83,7 +83,7 @@ GET /=/model/laser
 === TEST 7: Add one column twice
 --- request
 POST /=/model/laser/B
-{type:"integer",label:"b"}
+{"type":"integer","label":"b"}
 --- response
 {"success":0,"error":"Column 'B' already exists in model 'laser'."}
 
@@ -92,7 +92,7 @@ POST /=/model/laser/B
 === TEST 8: Add one column twice
 --- request
 POST /=/model/laser/B
-{type:"integer",labeh:"b"}
+{"type":"integer","labeh":"b"}
 --- response
 {"success":0,"error":"Column 'B' already exists in model 'laser'."}
 
@@ -152,7 +152,7 @@ PUT /=/model/laser/B
 === TEST 14: Try updating type
 --- request
 PUT /=/model/laser/C
-{type:"real"}
+{"type":"real"}
 --- response
 {"success":1}
 
@@ -203,7 +203,7 @@ GET /=/model/laser
 === TEST 19: Insert a record
 --- request
 POST /=/model/laser/~/~
-{ C: 3.14159 }
+{ "C": 3.14159 }
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/laser/id/1"}
 
@@ -371,7 +371,7 @@ POST /=/model/laser/~
 
 === TEST 38: Insert a record
 --- request
-GET /=/post/model/laser/~/~?data={M:3.14}
+GET /=/post/model/laser/~/~?data={"M":3.14}
 --- response
 {"success":1,"rows_affected":1,"last_row":"/=/model/laser/id/2"}
 
