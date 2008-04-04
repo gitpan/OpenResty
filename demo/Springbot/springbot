@@ -1,0 +1,52 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use SpringBot;
+
+my $nick = 'chunbot';
+my $channel = '#eeee';
+my $charset = 'gbk';
+my $server = '10.62.136.8';
+
+my ($account, $password);
+
+GetOptions(
+    'nick=s' => \$nick,
+    'channel=s' => \$channel,
+    'charset=s' => \$charset,
+    'server=s' => \$server,
+    'account=s' => \$account,
+    'password=s' => \$password,
+) or die "Usage: springbot --nick <irc_nick> --channel <irc_channel> --charset <default_charset_for_the_channel> --server <irc_server> --account <openresty_account> --password <openresty_password>\n";
+
+$channel = "#$channel" unless $channel =~ /^\#/;
+
+$account || die "No --acount <account> specified.\n";
+$password || die "No --password <password> specified.\n";
+
+sub init {
+    eval {
+        my $bot = SpringBot->new(
+            server    => $server,
+            #port      => $port,
+            channels  => [$channel],
+            nick      => $nick,
+            alt_nicks => [$nick, $nick.'_', $nick . '__'],
+            username  => "bot",
+            name      => "SpringBot powered by OpenResty",
+            charset   => $charset,
+            resty_account => $account,
+            resty_password => $password,
+        );
+        $bot->run();
+    };
+    if ($@) { warn $@; init(); }
+}
+
+init();
+
+# vim: ts=4 sw=4 expandtab
+

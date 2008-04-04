@@ -18,7 +18,7 @@ $version .= 0 until length($version) >= length('0.123456');
 $version =~ s{^(\d+)\.(\d{3})(\d{3})?$}{join '.', int($1), int($2), int($3||0)}e;
 version($version);
 
-requires            ('Cookie::XS' => '0.08');
+requires            ('Cookie::XS' => '0.09');
 requires            ('FCGI');
 requires            ('CGI::Simple' => '1.103');
 requires            ('CGI::Simple::Cookie');
@@ -38,6 +38,14 @@ requires            ('Config::Simple');
 requires            ('Encode::Guess');
 requires            ('List::MoreUtils');
 requires            ('JSON::XS' => '2.1');
+requires            ('Data::Structure::Util' => '0.15');
+
+recommends          ('Benchmark::Timer');
+recommends          ('HTTP::Server::Simple' => '0.27');
+recommends          ('Text::Diff');
+recommends          ('Text::Table');
+recommends          ('Term::ReadLine::Perl');
+recommends          ('Term::ReadLine::Gnu');
 
 if ($arg eq 'product') {
     features(
@@ -46,15 +54,10 @@ if ($arg eq 'product') {
                 recommends    ('Term::ReadKey' => '2.30'),
                 recommends    ('CGI' => '3.33'),
                 recommends    ('Cache::Cache' => '1.05'),
-                recommends    ('Smart::Comments'),
                 recommends    ('Class::Prototyped'),
                 recommends    ('Test::LongString'),
-                recommends    ('LWP::UserAgent'),
                 recommends    ('HTTP::Response' => '1.53'),
-                recommends    ('Benchmark::Timer'),
-                recommends    ('HTTP::Server::Simple' => '0.27'),
-                recommends    ('WWW::OpenResty' => '0.02'),
-                recommends    ('Text::Diff'),
+                recommends    ('WWW::OpenResty' => '0.05'),
         ]
     );
 } elsif ($arg eq 'devel') {
@@ -65,14 +68,12 @@ if ($arg eq 'product') {
     build_requires      ('LWP::UserAgent');
     build_requires      ('HTTP::Response' => '1.53');
     build_requires      ('Cache::Cache' => '1.05');
-    recommends          ('Cache::FastMmap' => '1.24');
-    recommends          ('Benchmark::Timer');
-    recommends          ('Smart::Comments');
-    recommends          ('HTTP::Server::Simple' => '0.27');
-    recommends          ('WWW::OpenResty' => '0.02'),
+    build_requires      ('WWW::OpenResty' => '0.05'),
 } else {
     die "Unknown Makefile.PL argument: \"$arg\"\n";
 }
+
+#recommends          ('Cache::FastMmap' => '1.24');
 
 install_script('bin/openresty');
 use_test_base();

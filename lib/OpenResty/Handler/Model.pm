@@ -3,18 +3,24 @@ package OpenResty::Handler::Model;
 use strict;
 use warnings;
 
-#use Smart::Comments '####';
+#use Smart::Comments '###';
 use OpenResty::Util;
 use List::Util qw( first );
 use Params::Util qw( _STRING _ARRAY0 _ARRAY _HASH );
 use JSON::Syck ();
 use OpenResty::Limits;
 use Clone 'clone';
+use Encode qw(is_utf8);
 
 sub check_type {
     my $type = shift;
     if ($type !~ m{^ \s*
                 (
+                    bigint |
+                    cidr |
+                    inet |
+                    macaddr |
+                    bit \s* \( \s* \d+ \s* \) |
                     boolean |
                     text |
                     integer |
@@ -41,8 +47,12 @@ sub DELETE_model_list {
     my @tables = map { @$_ } @$res;
     #$tables = $tables->[0];
 
+    my $sql;
     for my $table (@tables) {
-        $self->drop_table($openresty, $table);
+        $sql .= $self->drop_table($openresty, $table);
+    }
+    if ($sql) {
+        $openresty->do($sql);
     }
     return { success => 1 };
 }
@@ -94,7 +104,8 @@ sub DELETE_model {
         die "Model \"$model\" not found.\n";
     }
     #$tables = $tables->[0];
-    $self->drop_table($openresty, $table);
+    my $sql = $self->drop_table($openresty, $table);
+    $openresty->do($sql);
     return { success => 1 };
 }
 
@@ -594,7 +605,7 @@ sub has_model_col {
 
 sub drop_table {
     my ($self, $openresty, $table) = @_;
-    $openresty->do(<<_EOC_);
+    return (<<_EOC_);
 drop table if exists "$table";
 delete from _models where table_name='$table';
 delete from _columns where table_name='$table';
@@ -617,7 +628,6 @@ sub insert_records {
     my $insert = OpenResty::SQL::Insert->new(QI($table));
 
     my $user = $openresty->current_user;
-    ### %AccountFiltered
     if ($OpenResty::AccountFiltered{$user}) {
         my $str = $OpenResty::Dumper->(clone($data));
         #die $val;
@@ -627,22 +637,28 @@ sub insert_records {
 
     if (ref $data eq 'HASH') { # record found
 
-        my $num = $self->insert_record($openresty, $insert, $data, $cols, 1);
+        my $sql = $self->insert_record($openresty, $insert, $data, $cols, 1);
+        my $num = $openresty->do($sql);
 
         my $last_id = $openresty->last_insert_id($table);
 
         return { rows_affected => $num, last_row => "/=/model/$model/id/$last_id", success => $num?1:0 };
     } elsif (ref $data eq 'ARRAY') {
-        my $i = 0;
-        my $rows_affected = 0;
         if (@$data > $INSERT_LIMIT) {
             die "You can only insert $INSERT_LIMIT rows at a time.\n";
         }
+        my $i = 0;
+        my $sql;
         for my $row_data (@$data) {
+            ++$i;
             _HASH($row_data) or
                 die "Bad data in row $i: ", $OpenResty::Dumper->($row_data), "\n";
-            $rows_affected += $self->insert_record($openresty, $insert, $row_data, $cols, $i);
-            $i++;
+            $sql .= $self->insert_record($openresty, $insert, $row_data, $cols, $i);
+        }
+        my $success = $openresty->do($sql);
+        my $rows_affected = 0;
+        if ($success) {
+            $rows_affected = @$data;
         }
         my $last_id = $openresty->last_insert_id($table);
         return { rows_affected => $rows_affected, last_row => "/=/model/$model/id/$last_id", success => $rows_affected?1:0 };
@@ -667,9 +683,10 @@ sub insert_record {
     if (!$found) {
         die "No column specified in row $row_num.\n";
     }
-    my $sql = "$insert";
+    return "$insert";
+}
 
-    return $openresty->do($sql);
+sub bulk_insert_records {
 }
 
 sub process_order_by {
@@ -833,6 +850,8 @@ sub update_records {
         if (lc($col) eq 'id') {
             die "Column \"id\" reserved.\n";
         }
+        #warn "is_utf8(val):", is_utf8($val), "\n";
+        #warn "is_utf8:", is_utf8($col), "\n";
         $update->set(QI($col) => Q($val));
     }
 
@@ -840,7 +859,12 @@ sub update_records {
         # XXX SQL injection point
         $update->where(QI($user_col) => Q($val));
     }
+    #warn "VAL:  $val";
+    #warn "is_utf8:", is_utf8($val), "\n";
+    #warn "is_utf8:", is_utf8($user_col), "\n";
+    #warn "is_utf8:", is_utf8($table), "\n";
     ### SQL: "$update"
+    #warn "X<<<<>>>> $update";
     my $retval = $openresty->do("$update") + 0;
     return {success => $retval ? 1 : 0,rows_affected => $retval};
 }

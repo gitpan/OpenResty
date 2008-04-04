@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.001009';
+our $VERSION = '0.001010';
 
 use strict;
 use warnings;
@@ -13,6 +13,7 @@ use JSON::XS ();
 use List::Util qw(first);
 use Params::Util qw(_HASH _STRING _ARRAY0 _ARRAY _SCALAR);
 use Encode qw(from_to encode decode);
+use Data::Structure::Util qw( _utf8_off );
 use DBI;
 
 use OpenResty::SQL::Select;
@@ -93,7 +94,9 @@ sub parse_data {
     if (!$Importer) {
         $Importer = $ext2importer{'.js'};
     }
-    return $Importer->($_[0]);
+    my $data = $Importer->($_[0]);
+    _utf8_off($data);
+    return $data;
 }
 
 sub new {
@@ -106,13 +109,12 @@ sub init {
     my $class = ref $self;
     my $cgi = $self->{_cgi};
 
-    my $db_state = $Backend->state;
     #warn "DB state: $db_state\n";
-    if ($db_state && $db_state =~ /^(?:08|57)/) {
+    if (!$Backend || !$Backend->ping) {
+        warn "Re-connecting the database...\n";
         eval { $Backend->disconnect };
         my $backend = $OpenResty::Config{'backend.type'};
         OpenResty->connect($backend);
-        warn "Re-connecting the database...\n";
         #die "Backend connection lost: ", $db_state, "\n";
     }
 
@@ -262,6 +264,7 @@ sub init {
 
     if ($req_data) {
         from_to($req_data, $charset, 'UTF-8');
+        #warn "from_to is_utf8(req_data): ", Encode::is_utf8($req_data), "\n";
         $req_data = $self->parse_data($req_data);
     }
 
@@ -527,7 +530,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.1.9 released on March 24, 2008.
+This document describes OpenResty 0.1.10 released on April 4, 2008.
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 var account = 'agentzh';
-//var host = 'http://resty.eeeeworks.org';
-var host = 'http://localhost';
+var host = 'http://resty.eeeeworks.org';
+//var host = 'http://10.62.136.86';
 
 var openresty = null;
 var savedAnchor = null;
@@ -24,7 +24,9 @@ $.fn.postprocess = function (clas, options) {
         var anchor = $(this).attr('href').replace(/^\#/, '');
         //debug("Anchor: " + anchor);
         $(this).click( function () {
+            //debug(location.hash);
             location.hash = anchor;
+            //alert(location.hash);
             if (savedAnchor == anchor) savedAnchor = null;
             dispatchByAnchor();
         } );
@@ -70,7 +72,8 @@ function init () {
     if (timer) {
         clearInterval(timer);
     }
-    timer = setInterval(dispatchByAnchor, 500);
+    dispatchByAnchor();
+    //timer = setInterval(dispatchByAnchor, 500);
     getSidebar();
 }
 
@@ -80,6 +83,7 @@ function resetAnchor () {
 }
 
 function dispatchByAnchor () {
+    //debug(location.hash);
     var anchor = location.hash;
     anchor = anchor.replace(/^\#/, '');
     if (savedAnchor == anchor)
@@ -100,8 +104,11 @@ function dispatchByAnchor () {
     }
     match = anchor.match(/^(?:post-list|post-list-(\d+))$/);
     var page = 1;
+    //alert(anchor + " " + location.hash);
     if (match)
         page = parseInt(match[1]) || 1;
+    else if (anchor != 'main')
+        top.location.hash = 'main';
 
     setStatus(true, 'renderPostList');
     openresty.callback = renderPostList;
@@ -307,6 +314,7 @@ function renderPost (res) {
         error("Failed to render post: " + res.error);
     } else {
         var post = res[0];
+        //if (!post) return;
         $("#beta-inner.pkg").html(
             Jemplate.process('post-page.tt', { post: post })
         ).postprocess();
@@ -314,6 +322,7 @@ function renderPost (res) {
         openresty.callback = function (res) {
             renderPrevNextPost(post.id, res);
         };
+        //debug(JSON.stringify(post));
         openresty.get('/=/view/PrevNextPost/current/' + post.id);
 
         setStatus(true, 'renderComments');
