@@ -1,0 +1,33 @@
+[% DEFAULT
+    view = {
+        definition => "select id, title, date_part('day', created) as day\n            from Post\n            where date_part('year', created) = $year and\n                date_part('month', created) = $month\n            order by created asc\n",
+        description => undef,
+        name => "PostsByMonth",
+    };
+%]
+
+[% BLOCK editable_view_value -%]
+<span class="editable" [% is_json ? 'resty_json="1"' : "" %] resty_path="view/[% view.name %]" resty_key="[% key %]" resty_value="[% value | html %]">[% value | html %]</span>
+[% END -%]
+
+<!-- block begin -->
+<div class="ttl">
+    <span class="text">[% view.name %]</span>
+</div>
+
+<div class="listcon">
+    <ul>
+        <li><b>Name</b>: [% view.name | html %]</li>
+        <li><b>Description</b>: [% INCLUDE editable_view_value key="description", value=view.description %]</li>
+        <li><b>Definition</b>:
+            <br/>
+            <pre class="view-def">[% INCLUDE editable_view_value key="definition", value=view.definition %]</pre></li>
+        <li>
+        <b><a href="javascript:void(0);" onclick="deleteView('[% view.name %]', 'views')">Delete this view</a></b>
+        </li>
+    </ul>
+
+    <div class="clearit"></div>
+</div>
+<!-- block end -->
+

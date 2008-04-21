@@ -1,5 +1,5 @@
 var account = 'agentzh';
-var host = 'http://resty.eeeeworks.org';
+var host = 'http://api.eeeeworks.org';
 //var host = 'http://10.62.136.86';
 
 var openresty = null;
@@ -8,6 +8,25 @@ var itemsPerPage = 5;
 var loadingCount = 0;
 var waitMessage = null;
 var timer = null;
+var thisYear = null;
+var thisMonth = null;
+var thisDay = null;
+
+var months = [
+    null,
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+];
 
 $(window).ready(init);
 
@@ -19,9 +38,12 @@ function debug (msg) {
     $("#copyright").append(msg + "<br/>");
 }
 
-$.fn.postprocess = function (clas, options) {
+$.fn.postprocess = function (className, options) {
     return this.find("a[@href^='#']").each( function () {
-        var anchor = $(this).attr('href').replace(/^\#/, '');
+        var href = $(this).attr('href');
+        // We need the following hack because IE expands href to
+        // absolute URL:
+        var anchor = href.replace(/^.*?\#/, '');
         //debug("Anchor: " + anchor);
         $(this).click( function () {
             //debug(location.hash);
@@ -62,10 +84,13 @@ function setStatus (isLoading, category) {
 
 function init () {
     loadingCount = 0;
+    var now = new Date();
+    thisYear = now.getFullYear();
+    thisMonth = now.getMonth();
+    thisDay = now.getDate();
+
     waitMessage = document.getElementById('wait-message');
-    //var host = 'http://10.62.136.86';
-    //var host = 'http://127.0.0.1';
-    openresty = new OpenAPI.Client(
+    openresty = new OpenResty.Client(
         { server: host, user: account + '.Public' }
     );
     //openresty.formId = 'new_model';
@@ -73,7 +98,8 @@ function init () {
         clearInterval(timer);
     }
     dispatchByAnchor();
-    //timer = setInterval(dispatchByAnchor, 500);
+    timer = setInterval(dispatchByAnchor, 600);
+    //debug("before getSidebar...");
     getSidebar();
 }
 
@@ -93,6 +119,9 @@ function dispatchByAnchor () {
         location.hash = 'main';
     }
     savedAnchor = anchor;
+
+    // prevent memory leaks from dynamically created <script> nodes:
+    if (loadingCount <= 0) openresty.purge();
     loadingCount = 0;
 
     var match = anchor.match(/^post-(\d+)(:comments|comment-(\d+))?/);
@@ -100,6 +129,14 @@ function dispatchByAnchor () {
         var postId = match[1];
         //alert("Post ID: " + postId);
         getPost(postId);
+        return;
+    }
+
+    match = anchor.match(/^archive-(\d+)-(\d+)$/);
+    if (match) {
+        var year = match[1];
+        var month = match[2];
+        getArchive(year, month);
         return;
     }
     match = anchor.match(/^(?:post-list|post-list-(\d+))$/);
@@ -110,31 +147,92 @@ function dispatchByAnchor () {
     else if (anchor != 'main')
         top.location.hash = 'main';
 
+    //debug("before getPostList...");
+    getPostList(page);
+    //debug("before getPager...");
+    getPager(page);
+    //debug("after getPager...");
+
+    $(".blog-top").attr('id', 'post-list-' + page);
+}
+
+function getArchive (year, month) {
+    setStatus(true, 'renderPostList');
+    $(".pager").html('');
+    openresty.callback = function (res) {
+        renderPostList(res);
+        setStatus(true, 'renderArchiveNav');
+        openresty.callback = renderArchiveNav;
+        openresty.get(
+            '/=/view/PrevNextArchive/~/~',
+            {
+                now: year + '-' + month + '-01',
+                month: month,
+                months: months
+            }
+        );
+    };
+    openresty.get(
+        '/=/view/FullPostsByMonth/~/~',
+        { count: 40, year: year, month: month }
+    );
+    $(".blog-top").attr('id', 'archive-' + year + '-' + month);
+}
+
+function renderArchiveNav (res) {
+    //debug("render archive nav: " + JSON.stringify(res));
+    setStatus(false, 'renderArchiveNav');
+    if (!openresty.isSuccess(res)) {
+        error("Failed to get archive navigator: " + res.error);
+        return;
+    }
+    var prev = null;
+    var next = null;
+    for (var i = 0; i < res.length; i++) {
+        var item = res[i];
+        item.year = parseInt(item.year);
+        item.month = parseInt(item.month);
+        //debug("item: " + JSON.stringify(item));
+        if (item.id == "prev") prev = item;
+        else if (item.id == "next")  next = item;
+    }
+    //debug("next: " + JSON.stringify(next));
+    //debug("prev: " + JSON.stringify(prev));
+    $("#post-list-nav").html(
+        Jemplate.process(
+            'archive-nav.tt',
+            { next: next, prev: prev, months: months }
+        )
+    ).postprocess();
+}
+
+function getPostList (page) {
     setStatus(true, 'renderPostList');
     openresty.callback = renderPostList;
     openresty.get('/=/model/Post/~/~', {
         count: itemsPerPage,
         order_by: 'id:desc',
-        offset: itemsPerPage * (page - 1),
-        limit: itemsPerPage
+        offset: itemsPerPage * (page - 1)
     });
+}
+
+function getPager (page) {
     setStatus(true, 'renderPager');
     openresty.callback = function (res) { renderPager(res, page); };
     openresty.get('/=/view/RowCount/model/Post');
-    $(".blog-top").attr('id', 'post-list-' + page);
 }
 
 function getSidebar () {
     getCalendar();
     getRecentPosts();
     getRecentComments();
+    getArchiveList();
 }
 
 function getCalendar (year, month) {
     if (year == undefined || month == undefined) {
-        var now = new Date();
-        year = now.getFullYear();
-        month = now.getMonth();
+        year = thisYear;
+        month = thisMonth;
     }
     var date = new Date(year, month, 1);
     var first_day_of_week = date.getDay();
@@ -147,6 +245,7 @@ function getCalendar (year, month) {
     }
     //alert(year);
     //alert(month);
+    //alert("thisday: " + thisDay);
     $(".module-calendar").html(
         Jemplate.process(
             'calendar.tt',
@@ -154,7 +253,10 @@ function getCalendar (year, month) {
                 year: year,
                 month: month,
                 first_day_of_week: first_day_of_week,
-                end_of_month: end_of_month
+                end_of_month: end_of_month,
+                today: (year == thisYear && month == thisMonth) ?
+                        thisDay : null,
+                months: months
             }
         )
     ).postprocess();
@@ -235,6 +337,43 @@ function renderRecentPosts (res, offset, count) {
     }
 }
 
+function getArchiveList (offset) {
+    if (offset == undefined) offset = 0;
+    setStatus(true, 'getArchiveList');
+    openresty.callback = function (res) {
+        renderArchiveList(res, offset, 12);
+    };
+    openresty.get(
+        '/=/view/PostCountByMonths/~/~',
+        { offset: offset, count: 12 }
+    );
+}
+
+function renderArchiveList (res, offset, count) {
+    setStatus(false, 'getArchiveList');
+    if (!openresty.isSuccess(res)) {
+        error("Failed to get archive list: " + res.error);
+        return;
+    }
+    for (var i = 0; i < res.length; i++) {
+        var item = res[i];
+        var match = item.year_month.match(/^(\d\d\d\d)-0?(\d+)/);
+        if (match) {
+            item.year = parseInt(match[1]);
+            item.month = parseInt(match[2]);
+        } else {
+            error("Failed to match against year_month: " + item.year_month);
+        }
+        //debug(JSON.stringify(item));
+    }
+    $("#archive-list").html(
+        Jemplate.process(
+            'archive-list.tt',
+            { archives: res, count: count, offset: offset, months: months }
+        )
+    ).postprocess();
+}
+
 function postComment (form) {
     var data = {};
     data.sender = $("#comment-author").val();
@@ -260,7 +399,7 @@ function postComment (form) {
     setStatus(true, 'afterPostComment');
     openresty.callback = afterPostComment;
     //openresty.formId = 'comment-form';
-    openresty.postByGet(data, '/=/model/Comment/~/~');
+    openresty.postByGet('/=/model/Comment/~/~', data);
     return false;
 }
 
@@ -291,8 +430,8 @@ function afterPostComment (res) {
             }
         };
         openresty.putByGet(
-            { comments: commentCount + 1 },
-            '/=/model/Post/id/' + postId
+            '/=/model/Post/id/' + postId,
+            { comments: commentCount + 1 }
         );
         getRecentComments(0);
     }
@@ -328,7 +467,7 @@ function renderPost (res) {
         setStatus(true, 'renderComments');
         openresty.callback = renderComments;
         openresty.get('/=/model/Comment/post/' + post.id);
-        $("#beta-pager.pkg").html('');
+        $(".pager").html('');
     }
 }
 
@@ -376,14 +515,21 @@ function renderPager (res, page) {
     if (!openresty.isSuccess(res)) {
         error("Failed to render pager: " + res.error);
     } else {
+        //debug("before rendering pager...");
         var pageCount = Math.ceil(parseInt(res[0].count) / itemsPerPage);
         if (pageCount < 2) return;
-        $("#beta-pager.pkg").html(
-            Jemplate.process(
-                'pager.tt',
-                { page: page, page_count: pageCount, title: 'Pages' }
-            )
-        ).postprocess();
+        //debug("before redering pager (2)...");
+        var html = Jemplate.process(
+            'pager.tt',
+            { page: page, page_count: pageCount, title: 'Pages' }
+        );
+        //debug("after html generation...");
+
+        // we use the .each hack here to work aound a JS runtime error in IE 6:
+        $(".pager").each( function () {
+            $(this).html( html ).postprocess();
+        } );
+        //debug("after rendering pager...");
         resetAnchor();
     }
 }

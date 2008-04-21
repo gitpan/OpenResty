@@ -1,7 +1,23 @@
 all:
-	-cp ../../clients/js/*.js .
-	jemplate --compile template/elem/ > jemplates.js
-	jemplate --runtime > Jemplate.js
-	tpage --include_path=template template/index.tt > index.html
+	-rm -rf out
+	-mkdir out
+	-cp ../../clients/js/*.js out/
+	jemplate --compile template/elem/ > out/jemplates.js
+	jemplate --runtime > out/Jemplate.js
+	tpage --include_path=template template/index.tt > out/index.html
+	tpage --define cat=model template/js/handlers.tt > out/model.js
+	tpage --define cat=view template/js/handlers.tt > out/view.js
+	tpage --define cat=role template/js/handlers.tt > out/role.js
+	tpage template/js/dispatcher.tt > out/dispatcher.js
+	cp html/login.html out/
+	cp ../Blog/image/loading.gif out/
+	cp js/*.js out/
+	cp js/*/*.js out/
+	cp css/*.css out/
+	tar cvf site-binary.tar out
+	gzip --best site-binary.tar
+	mv site-binary.tar.gz out/
 
+upload:
+	scp -l 10000 -r `pwd`/out agentz@resty.eeeeworks.org:~/admin
 

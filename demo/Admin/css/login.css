@@ -1,0 +1,20 @@
+table {
+    background: #eef;
+    padding: 1em;
+}
+
+td {
+    padding: 5;
+}
+
+#register-link, #login-button {
+    float: right;
+    margin-right: 2em
+    font-size: 14pt;
+    padding: 2px;
+}
+
+#main {
+    padding-top: 10em;
+}
+

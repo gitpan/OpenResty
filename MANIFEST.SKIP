@@ -15,10 +15,18 @@ bin/.*\.dat
 ^demo/Admin/jemplates\.js$
 ^demo/Admin/JSON\.js$
 ^demo/Blog/out
+^demo/Blog/script/upload
 ^demo/Blog2/out
+^demo/Blog/backup
 ^demo/Blog2/js
 ^demo/Blog2/template
 ^demo/Admin/index.html
+^demo/Admin/out
+^demo/Blog/backup
+^demo/Blog/.*\.json
+^demo/Blog2/.*\.json
+^demo/Blog2/script/reset\.mk
+^demo/Blog2/script/upload
 ^demo/Admin/template/exceptions.tt
 ^demo/Admin/template/page-rent.tt
 ^demo/Admin/template/page-secondary.tt
@@ -39,7 +47,7 @@ agentzh-live\.json$
 ^font/wqy-zenhei.ttf
 ^grammar/Select\.pm$
 ^doc/spec*
-^minisql
+^obsolete/minisql
 ^print\.txt$
 ^log.conf$
 ^lib/SQL

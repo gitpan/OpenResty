@@ -4,7 +4,7 @@ use Test::Base;
 
 #use Smart::Comments;
 use lib 'lib';
-use OpenResty::MiniSQL::Select;
+use OpenResty::RestyScript::View;
 
 #plan tests => 3 * blocks();
 
@@ -37,7 +37,7 @@ run {
         } @ln;
     }
 
-    my $select = OpenResty::MiniSQL::Select->new;
+    my $select = OpenResty::RestyScript::View->new;
     my $sql = $block->sql or die "$name - No --- sql section found.\n";
     my $res;
     eval {
@@ -125,7 +125,7 @@ select *
 from Carrie
 where
 --- error
-line 3: error: Unexpected end of input (VAR or IDENT or '(' expected).
+line 3: error: Unexpected end of input (NUM or VAR or IDENT or '(' or STRING expected).
 
 
 
@@ -239,7 +239,7 @@ select *
 from blah
 where name = '\'' and #@!##$@ --' or age <= 3;
 --- error
-line 3: error: Unexpected input: "#" (VAR or IDENT or '(' expected).
+line 3: error: Unexpected input: "#" (NUM or VAR or IDENT or '(' or STRING expected).
 
 
 
@@ -636,4 +636,87 @@ select count(*)
 from $model
 --- out: select count ( * ) from ""
 --- models:
+
+
+
+=== TEST 55: like and other operators
+--- sql
+select * from Post where id like '%Hello%'
+--- out: select * from "Post" where "id" like $y$%Hello%$y$
+--- models: Post
+
+
+
+=== TEST 56: random operators
+--- sql
+select sum(1) as count, sum(3+2 * (3 - 5^7)) from Post
+--- out: select sum ( 1 ) as count , sum ( 3 + 2 * ( 3 - 5 ^ 7 ) ) from "Post"
+
+
+
+=== TEST 57: % and /
+--- sql
+select 32 % (3 ^ (7-5) / 25 )
+--- out: select 32 % ( 3 ^ ( 7 - 5 ) / 25 )
+
+
+
+=== TEST 58: ||
+--- sql
+select '32' || '56'
+--- out: select $y$32$y$ || $y$56$y$
+
+
+
+=== TEST 59: || in proc calls
+--- sql
+select date_part('year', created) || date_part('mon' || 'th', created) from Post
+--- out: select date_part ( $y$year$y$ , "created" ) || date_part ( $y$mon$y$ || $y$th$y$ , "created" ) from "Post"
+--- models: Post
+
+
+
+=== TEST 60: || with vars
+--- sql
+select * from Post where title like '%' || $keyword || '%'
+--- in_vars
+keyword=Perl
+--- out: select * from "Post" where "title" like $y$%$y$ || $y$Perl$y$ || $y$%$y$
+
+
+
+=== TEST 61: blog archive listing
+--- sql
+    select (date_part('year', created) || '-'
+                || date_part('month', created) || '-01')::date
+        as year_month,
+        sum(1) as count
+    from Post
+    group by year_month
+    order by year_month desc
+    offset $offset | 0
+    limit $limit | 12
+--- out: select ( date_part ( $y$year$y$ , "created" ) || $y$-$y$ || date_part ( $y$month$y$ , "created" ) || $y$-01$y$ ) :: date as year_month , sum ( 1 ) as count from "Post" group by "year_month" order by "year_month" desc offset 0 limit 12
+
+
+
+=== TEST 62: try to_char
+--- sql
+    select to_char(created, 'YYYY-MM-01') :: date as year_month,
+        sum(1) as count
+    from Post
+    group by year_month
+    order by year_month desc
+    offset $offset | 0
+    limit $limit | 12
+--- out: select to_char ( "created" , $y$YYYY-MM-01$y$ ) :: date as year_month , sum ( 1 ) as count from "Post" group by "year_month" order by "year_month" desc offset 0 limit 12
+
+
+
+=== TEST 63: carrie's view
+--- sql
+select * from yisou_comments_fetch_results($parentid,'',$orderby,$offset,$count,$child_offset,$child_count,$dsc)
+--- in_vars
+offset=0
+--- out: select * from yisou_comments_fetch_results ( $y$$y$ , $y$$y$ , $y$$y$ , $y$0$y$ , $y$$y$ , $y$$y$ , $y$$y$ , $y$$y$ )
 

@@ -1,0 +1,12 @@
+* /=/model.json?var=foo
+* /=/model/Foo/~/blah?op=contains (when Foo has a timestamp column)
+* t/p3p-cookie.t for cross-site cookie support and the cookie_site url param
+* view description should be mandatory
+* [bug] when view name is duplicate (POST/PUT)
+* [bug] when view definition is duplicate (POST/PUT)
+* [bug] reject updating the names of the builtin roles.
+* add the sorting capability (i.e. the order_by url param) to model/view/role lists
+* [bug] PUT an empty label.
+* [bug] PUT /=/role/Foo/id/32 does not work as expected.
+* order in ACL rule listing
+

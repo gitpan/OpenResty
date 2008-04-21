@@ -1,0 +1,67 @@
+[% DEFAULT
+    role = {
+        description => 'Administrator',
+        name => 'Admin',
+        login => 'password',
+        columns => [
+            {
+                label => 'HTTP method',
+                name => 'method',
+                type => 'text',
+            },
+            {
+                label => 'Resource',
+                name => 'url',
+                type => 'text',
+            }
+        ]
+    };
+%]
+
+[% BLOCK editable_role_value -%]
+<span class="editable" [% is_json ? 'resty_json="1"' : "" %] [% type ? 'resty_type="' _ type _ '"' : "" %] resty_path="role/[% role.name %]" resty_key="[% key %]" resty_value="[% value | html %]">[% value | html %]</span>
+[% END -%]
+
+
+<!-- block begin -->
+<div class="ttl">
+    <span class="text">
+        <a href="#rolerules-[% role.name %]" title="Access rules for Role [% role.name %]">
+        [% role.name %]
+        </a>
+    </span>
+</div>
+
+<div class="listcon">
+    <ul>
+        <li><b class="key">Name</b>: [% role.name | html %]</li>
+        <li><b class="key">Description</b>: [% INCLUDE editable_role_value key="description", value=role.description %]</li>
+        <li><b class="key">Login method</b>: [% INCLUDE editable_role_value key="login", value=role.login %]</li>
+        <li><b class="key">Columns</b>:
+            <ul>
+            [%- FOREACH column IN role.columns %]
+                <li>
+              [%- FOREACH key IN column.keys %]
+                [%- value = column.$key;
+                    NEXT IF !value AND value != 0 %]
+                <b class="key">[%- key | html %]</b>: [% value | html %] &nbsp;&nbsp;
+              [%- END %]
+                </li>
+            [%- END %]
+            </ul>
+        </li>
+    </ul>
+    <ul>
+        <li>
+            <b><a id="show-detail" href="#rolerules-[% role.name %]" class="text">View ACL rules</a></b>
+            &nbsp; &nbsp; &nbsp;
+            <b><a href="javascript:void(0);" onclick="deleteRole('[% role.name %]', 'roles')">Delete this role</a></b>
+
+        </li>
+    </ul>
+
+
+    <div class="clearit"></div>
+</div>
+<!-- block end -->
+

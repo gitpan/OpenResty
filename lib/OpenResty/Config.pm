@@ -3,11 +3,21 @@ package OpenResty::Config;
 use strict;
 use warnings;
 
+#use Smart::Comments;
 use FindBin;
 use Config::Simple;
 use Hash::Merge;
 
+our $Initialized = undef;
+
+sub to_num ($) {
+    (my $s = $_[0]) =~ s/_//g;
+    $s;
+}
+
 sub init {
+    return if $Initialized;
+    $Initialized = 1;
     my ($class, $root_path) = @_;
     $root_path ||= "$FindBin::Bin/..";
     my $path = "$root_path/etc/openresty.conf";
@@ -37,13 +47,13 @@ sub init {
         warn "backend.type=mmap\n" if $do_echo;
         $OpenResty::Config{'cache.type'} = 'mmap';
     }
-    $OpenResty::Limits::RECORD_LIMIT = $OpenResty::Config{'frontend.row_limit'};
-    $OpenResty::Limits::INSERT_LIMIT = $OpenResty::Config{'frontend.bulk_insert_limit'};
-    $OpenResty::Limits::COLUMN_LIMIT = $OpenResty::Config{'frontend.column_limit'};
-    $OpenResty::Limits::MODEL_LIMIT = $OpenResty::Config{'frontend.model_limit'};
-    $OpenResty::Limits::POST_LEN_LIMIT = $OpenResty::Config{'frontend.post_len_limit'};
+    $OpenResty::Limits::RECORD_LIMIT = to_num $OpenResty::Config{'frontend.row_limit'};
+    $OpenResty::Limits::INSERT_LIMIT = to_num $OpenResty::Config{'frontend.bulk_insert_limit'};
+    $OpenResty::Limits::COLUMN_LIMIT = to_num $OpenResty::Config{'frontend.column_limit'};
+    $OpenResty::Limits::MODEL_LIMIT = to_num $OpenResty::Config{'frontend.model_limit'};
+    $OpenResty::Limits::POST_LEN_LIMIT = to_num $OpenResty::Config{'frontend.post_len_limit'};
 
-    $CGI::Simple::POST_MAX = $OpenResty::Limits::POST_LEN_LIMIT;  # max 100 K posts
+    $CGI::Simple::POST_MAX = to_num $OpenResty::Limits::POST_LEN_LIMIT;  # max 100 K posts
     $CGI::Simple::DISABLE_UPLOADS = 1;  # no uploads
 }
 

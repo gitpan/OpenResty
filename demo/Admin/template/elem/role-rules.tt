@@ -1,0 +1,71 @@
+[% DEFAULT
+    role = 'Admin',
+    rules = [
+        { method => "GET", url => '/=/view/Foo' },
+        { method => "DELETE", url => '/=/role/Bar' },
+    ];
+%]
+
+[% BLOCK editable_rule_value -%]
+<span class="editable" [% type ? 'resty_type="' _ type _ '"' : "" %] resty_path="role/[% role %]/id/[% id %]" resty_key="[% key %]" resty_value="[% value | html %]">[% value | html %]</span>
+[% END -%]
+
+<div class="ttl">
+    <span class="text">
+        <a href="#role-[% role | html %]">[% role %]</a>
+    </span>
+</div>
+
+<div class="pager"></div>
+
+<div class="listcon">
+    <table class="rules">
+        <tr>
+            <th>ID</th>
+            <th>HTTP method</th>
+            <th>Resource</th>
+        </tr>
+        [%- FOREACH rule = rules %]
+        <tr>
+            <td>[% rule.id %]</td>
+            <td>[% INCLUDE editable_rule_value id=rule.id, key="method", value=rule.method %]</td>
+            <td>[% INCLUDE editable_rule_value id=rule.id, key="url", value=rule.url %]</td>
+            <td>
+              <b><a href="javascript:void(0);" onclick="deleteRoleRule('[% role %]', [% rule.id %])">Delete</a></b>
+            </td>
+        </tr>
+        [%- END %]
+    </table>
+
+</div>
+
+<div class="pager"></div>
+
+<div class="ttl2">
+    <span class="text">
+        New ACL rule
+    </span>
+</div>
+<div class="create-model">
+<form id="create-rule-form" onsubmit="return false;">
+    <p>
+        <label>HTTP method</label>
+        <select id="create-rule-method">
+            <option value ="GET">GET</option>
+            <option value ="POST">POST</option>
+            <option value ="PUT">PUT</option>
+            <option value ="DELETE">DELETE</option>
+        </select>
+
+    </p>
+    <p>
+        <label>Resource</label>
+        <input type="text" size="25" id="create-rule-url"></input>
+    </p>
+
+    <p>
+        <input type="submit" class="create-button" value="Create" onclick="createACLRule('[% role %]')"></input>
+    </p>
+</form>
+</div>
+

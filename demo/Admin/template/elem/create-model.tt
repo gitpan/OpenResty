@@ -1,0 +1,29 @@
+<div class="ttl2">
+    <span class="text">
+        New model
+    </span>
+</div>
+
+<div class="create-model">
+<form id="create-model-form" onsubmit="return false;">
+
+        <p>
+            <label>Name</label>
+            <input type="text" size="8" id="create-model-name"></input>
+        </p>
+        <p>
+            <label>Description</label>
+            <input type="text" size="18" id="create-model-desc"></input>
+        </p>
+
+        <div id="create-model-columns"></div>
+        <p class="add-column">
+            <a href="javascript:void(0);" onclick="addOneMoreColumn()">Add a column</a>
+        </p>
+        <p>
+            <input type="submit" class="create-button" value="Create" onclick="createModel()"></input>
+        </p>
+
+</form>
+</div>
+

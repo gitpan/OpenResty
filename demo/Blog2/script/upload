@@ -1,4 +1,0 @@
-#!/bin/sh
-
-scp -l 10000 -P 18888 -r `pwd`/out agentzh@eeeeworks.org:~/4eblog
-

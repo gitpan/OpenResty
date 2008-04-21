@@ -1,0 +1,45 @@
+[% DEFAULT
+    model = 'Employee',
+    rows = [
+        { name => "Carrie", age => 24 },
+        { name => "agentzh", age => 25 },
+        { name => "laser", age => 35 },
+    ];
+%]
+
+[% BLOCK editable_row_value -%]
+<span class="editable" [% type ? 'resty_type="' _ type _ '"' : "" %] resty_path="model/[% model %]/id/[% id %]" resty_key="[% key %]" resty_value="[% value | html %]">[% value | html %]</span>
+[% END -%]
+
+<div class="ttl">
+    <span class="text">
+        <a href="#model-[% model %]">[% model %]</a>
+    </span>
+</div>
+
+<div class="pager"></div>
+
+<div class="listcon">
+    <ul>
+        [%- FOREACH row IN rows %]
+            <li>
+            [%- FOREACH key IN row.keys %]
+            [%- value = row.$key;
+                NEXT IF !value AND value != 0 %]
+            <b class="key">[%- key | html %]</b>: [% INCLUDE editable_row_value id=row.id %] &nbsp;&nbsp;
+            [%- END %]
+
+            <b><a href="javascript:void(0);" onclick="deleteModelRow('[% model %]', [% row.id %])">Delete</a></b>
+
+            </li>
+            <hr/>
+        [%- END %]
+    </ul>
+</div>
+
+<div class="pager"></div>
+
+<p style="text-align: left; margin-left: 6em;" id="new-row">
+<b><a href="javascript:void(0);" title="Create a new record" onclick="getModelRowForm('[% model %]')">Add a new row</a></b>
+</p>
+

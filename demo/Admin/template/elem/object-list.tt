@@ -1,0 +1,72 @@
+[% DEFAULT
+    category = 'model',
+    objects = [
+        {
+            description => 'Blog post',
+            name => 'Post',
+            src => '/=/object/Post',
+        },
+        {
+            description => 'Blog comment',
+            name => 'Comment',
+            src => '/=/object/Comment',
+        },
+        {
+            description => 'Yahoo! China Staff',
+            name => 'YahooStaff',
+            src => '/=/object/YahooStaff'
+        },
+        {
+            description => 'IRC Log',
+            name => 'IrcLog',
+            src => '/=/object/IrcLog',
+        }
+    ];
+%]
+
+[% BLOCK editable_value -%]
+<span class="editable" resty_path="[% category %]/[% object.name %]" resty_key="[% key %]" resty_value="[% value | html %]">[% value | html %]</span>
+[% END -%]
+
+[%- i = 0 %]
+[%- FOREACH object IN objects %]
+    [%- i = i + 1 %]
+
+    <!-- block begin -->
+    <div class="ttl">
+        <span class="text">
+            <a href="#[% category %]-[% object.name %]" title="[% object.description | html %]">[% object.name %]</a>
+        </span>
+        <span class="tp"><!-- <a href="#__top" title="">页首↑</a> --></span>
+    </div>
+
+    <div class="listcon">
+        <ul>
+            <li>
+                <b>Name</b>: [% INCLUDE editable_value key="name", value=object.name %]
+                &nbsp; &nbsp; &nbsp;
+                <b>Description</b>: [% INCLUDE editable_value key="description", value=object.description %]
+            </li>
+            <li>
+                <b><a href="#[% category %]-[% object.name %]" title="[% object.description | html %]">More detail</a></b>
+                &nbsp; &nbsp; &nbsp;
+
+                [%- IF category == 'model' %]
+                <b><a href="#modelrows-[% object.name %]">View model rows</a></b>
+                &nbsp; &nbsp; &nbsp;
+                [%- ELSIF category == 'role' %]
+                <b><a href="#rolerules-[% object.name %]">View ACL rules</a></b>
+                &nbsp; &nbsp; &nbsp;
+                [%- END %]
+
+                <b><a href="javascript:void(0);" onclick="delete[% category | ucfirst %]('[% object.name %]')">Delete this [% category %]</a></b>
+            </li>
+        </ul>
+        <div class="clearit"></div>
+    </div>
+    <!-- block end -->
+[%- END %]
+
+[%- file = 'create-' _ category _ '.tt' %]
+[%- PROCESS $file %]
+

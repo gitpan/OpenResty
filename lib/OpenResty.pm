@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.001010';
+our $VERSION = '0.002000';
 
 use strict;
 use warnings;
@@ -23,12 +23,12 @@ use OpenResty::SQL::Insert;
 use OpenResty::Backend;
 use OpenResty::Limits;
 
-use OpenResty::MiniSQL::Select;
 #use encoding "utf8";
 
 use OpenResty::Util;
 use OpenResty::Handler::Model;
 use OpenResty::Handler::View;
+use OpenResty::Handler::Feed;
 use OpenResty::Handler::Action;
 use OpenResty::Handler::Role;
 use OpenResty::Handler::Admin;
@@ -437,6 +437,17 @@ sub current_user_can {
     return do { $res->[0][0] };
 }
 
+sub has_feed {
+    my ($self, $feed) = @_;
+
+    _IDENT($feed) or die "Bad feed name: $feed\n";
+
+    my $select = OpenResty::SQL::Select->new('count(name)')
+        ->from('_feeds')
+        ->where(name => Q($feed));
+    return $self->select("$select",)->[0][0];
+}
+
 sub has_view {
     my ($self, $view) = @_;
 
@@ -530,7 +541,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.1.10 released on April 4, 2008.
+This document describes OpenResty 0.2.0 released on April 21, 2008.
 
 =head1 DESCRIPTION
 

@@ -20,9 +20,6 @@
         <ul class="module-list">
                     <!--
                         <li class="module-list-item"><a href="http://pugs.blogs.com/pugs/app/index.html">App</a></li>
-                        <li class="module-list-item"><a href="http://pugs.blogs.com/pugs/backends/index.html">Backends</a></li>
-                        <li class="module-list-item"><a href="http://pugs.blogs.com/pugs/doc/index.html">Doc</a></li>
-                        <li class="module-list-item"><a href="http://pugs.blogs.com/pugs/event/index.html">Event</a></li>
                     -->
 
         </ul>
@@ -30,7 +27,7 @@
 </div>
     <div class="module-archives module">
         <h2 class="module-header">Archives</h2>
-        <div class="module-content">
+        <div class="module-content" id="archive-list">
             <!--
                                                 <ul class="module-list">
 
@@ -56,15 +53,22 @@
         <div class="module-content"><img src="me.jpg" alt="My Photo" /></div>
                 <br/>
     </div>
+[% END %]
 
 <div class="module-syndicate module">
     <h2 class="module-header">RSS feed</h2>
     <div class="module-content">
         <!-- this is a hack; we'll use OpenAPI's own RSS feed support later -->
-        <a href="http://agentzh.spaces.live.com/feed.rss">Subscribe to this blog's feed</a>
+        <ul class="module-list">
+            <li class="module-list-item">
+                <a href="http://[% resty_server %]/=/feed/Post/count/75?user=[% blog_owner %].Public">Subscribe to the article feed</a>
+            </li>
+            <li class="module-list-item">
+                <a href="http://[% resty_server %]/=/feed/Comment/count/75?user=[% blog_owner %].Public">Subscribe to the comment feed</a>
+            </li>
+        </ul>
     </div>
 </div>
-[% END %]
 
 <div class="module-download module">
     <h2 class="module-header"><a

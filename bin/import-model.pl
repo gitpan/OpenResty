@@ -8,6 +8,7 @@ use lib 'lib';
 use Params::Util qw( _HASH );
 use JSON::XS ();
 use WWW::OpenResty::Simple;
+use Data::Dumper;
 
 sub usage {
     my $progname;
@@ -23,6 +24,7 @@ Options:
     --server <host>    OpenResty server hostname
     --step <num>       Size of the bulk insertion group
     --retries <num>    Number of automatic retries when failures occur
+    --no-id            Skipped the id field in the records being imported
 _EOC_
 }
 
@@ -37,6 +39,7 @@ GetOptions(
     'step=i' => \$step,
     'reset' => \(my $reset),
     'retries=i' => \(my $retries),
+    'no-id' => \(my $no_id),
 ) or die usage();
 
 if ($help) { print usage() }
@@ -60,14 +63,15 @@ while (<>) {
     #warn "count: ", scalar(@elems), "\n";
     my $row = $json_xs->decode($_);
 
+    if ($no_id) {
+        delete $row->{id};
+    }
     push @rows, $row;
     if (@rows % $step == 0) {
         $inserted += insert_rows(\@rows);
         @rows = ();
         print STDERR "\rInserted rows: $inserted";
     }
-
-    $inserted++;
 }
 
 if (@rows) {
@@ -81,7 +85,10 @@ sub insert_rows {
         "/=/model/$model/~/~",
         $rows
     );
-    return 0 unless _HASH($res);
+    if (!_HASH($res)) {
+        die Dumper($res);
+        return 0;
+    }
     return $res->{rows_affected} || 0;
 }
 

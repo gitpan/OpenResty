@@ -5,12 +5,13 @@ use Test::Base -Base;
 use YAML::Syck ();
 #use JSON::Syck ();
 use JSON::XS ();
+use Digest::MD5 qw(md5_hex);
 
 #use Smart::Comments '####';
 my $client_module;
 use OpenResty::Config;
 BEGIN {
-    OpenResty::Config->init;
+    OpenResty::Config->init('.');
     my $use_http = $OpenResty::Config{'test_suite.use_http'};
     if ($use_http) {
         $client_module = 'WWW::OpenResty';
@@ -33,7 +34,7 @@ eval {
 my $SavedCapture;
 
 our $server = $ENV{'OPENRESTY_TEST_SERVER'} ||
-    $OpenResty::Config{'test_suite.server'} or
+    $OpenResty::Config{'test_suite.server'} ||
     die "No server specified.\n";
 our ($user, $password, $host);
 if ($server =~ /^(\w+):(\S+)\@(\S+)$/) {
@@ -41,6 +42,7 @@ if ($server =~ /^(\w+):(\S+)\@(\S+)$/) {
 } else {
     die "test_suite.server syntax error in conf file: $server\n";
 }
+$password = md5_hex($password);
 
 $host = "http://$host" if $host !~ m{^http://};
 
@@ -122,6 +124,9 @@ sub smart_is ($$$$) {
                 $got = canon_yaml($got);
                 $expected = canon_yaml($expected);
             };
+        } elsif ($format eq 'feed') {
+            $got      =~ s{<((?:pub|lastBuild)Date)>.*?</\1>}{<$1>XXX</$1>}g;
+            $expected =~ s{<((?:pub|lastBuild)Date)>.*?</\1>}{<$1>XXX</$1>}g;
         }
     }
     is $got, $expected, $desc;
