@@ -1,0 +1,654 @@
+=encoding utf8
+
+=head1 NAME
+
+OpenResty::Spec::Overview - Overview of the OpenResty service platform
+
+=head1 INTRODUCTION
+
+OpenResty is a general-purpose RESTful web service platform for web
+applications. It provides the following important functionalities for
+a common nontrivial web app:
+
+=over
+
+=item *
+
+(scalable) relational data storage,
+
+=item *
+
+Truely RESTy interface and JSON/YAML data transfer format,
+
+=item *
+
+SQL-based reusable views,
+
+=item *
+
+a REST-oriented role system for access control,
+
+=item *
+
+view-based RSS feeds,
+
+=item *
+
+user-defined actions in the RestyScript language,
+
+=item *
+
+captchas,
+
+=item *
+
+and cross-site AJAX support.
+
+=back
+
+=head2 What OpenResty is
+
+=over
+
+=item *
+
+A REST wrapper for relational databases
+
+=item *
+
+A web runtime for 100% JavaScript web sites and other RIAs.
+
+=item *
+
+A "meta web site" supporting other sites via web services.
+
+=item *
+
+A handy personal or company database which can be accessed from anywhere
+on the web.
+
+=item *
+
+A (sort of) competitor for the Facebook Data Store API.
+
+=back
+
+=head2 What OpenResty is NOT
+
+=over
+
+=item *
+
+A server-side web application framework.
+
+=item *
+
+A relacement for highly scalable semi-structured data storage solutions
+like Amazon SimpleDB or CouchDB.
+
+=back
+
+=head1 REST API
+
+This section just gives a conceptual overview for the REST API probably
+with some samples. For detailed spec for the various REST request syntax,
+see L<OpenResty::CheatSheet> and L<OpenResty::Spec::REST>.
+
+=head2 Accounts
+
+An openresty server typically distributes its data in terms of accounts,
+especially when the backend is a database cluster. An account is an
+atomic namespace for other OpenResty first-class objects like models
+and views. (In the current Pg and PgFarm backends, accounts are actually
+implemented by Pg schemas.) These objects are shared in the same account
+and different accounts can have different models, views, actions, and
+etc. with the same names.
+
+Operations like creating and removing accounts are not part of the
+OpenResty web service API. Basically the sysadmin uses the following
+command to create an account on his server terminal:
+
+  $ bin/openresty adduser marry
+
+and a similar command to remove one:
+
+  $ bin/openresty deluser marry
+
+=head2 Roles
+
+Multiple users can share the same set of objects in an account by logging
+in as different roles. And fine-grained access control can be achieved
+by specifying different sets of ACL rules for each role.
+
+Every OpenResty account has two builtin roles throughout its lifetime:
+C<Admin> and C<Public>.
+
+The C<Admin> role always owns the most privileges and its properties and
+ACL rule set are always read only. C<Public> role is always anonymous
+but its ACL rule set can be modified by a role with enough privileges.
+
+An OpenResty role with access to the Role API (such as C<Admin>) can
+create new roles, remove existing roles (except the two builtin roles
+explained above, of course), and modify the properties and ACL rules
+of other roles or even itself. For instance, to allow the C<Public>
+role to perform the request C<< GET /=/model/Post/id/<some number> >>
+under the same account, the C<Admin> role could insert a corresponding
+access rule to the C<Public> role's ACL rule set, like this:
+
+  POST /=/role/Public/~/~ HTTP/1.0
+  Content-Type: text/json
+  Content-Length: 45
+
+  {"method":"GET", "url":"/=/model/Post/id/~"}
+
+The JSON structure in the POST content specifies an ACL rule. The
+tild (C<~>) character in the C<url> value serves as a wildcard which
+matches "anything". So both C<GET /=/model/Post/id/1> and C<GET
+/=/model/Post/id/231> are allowed to be performed by the C<Public> role.
+
+Interestingly it's also possible to grant the C<Public> role privileges
+to augment its own ACL rule set in a similar way:
+
+  POST /=/role/Public/~/~ HTTP/1.0
+  Content-Type: text/json
+  Content-Length: 46
+
+  {"method":"POST", "url":"/=/role/Public/~/~"}
+
+=head1 Login
+
+Every user accessing an OpenResty server must specify both its account
+name and its role name unless he or she has already logged in and got
+a session ID. For example, a typical HTTP request may look like this:
+
+  GET /=/model/Post/id/3?user=agentzh.Public HTTP/1.0
+
+In the above example, the C<user> parameter has the value
+C<agentzh.Public> where C<agentzh> is the account name and C<Public>
+the role name. In addition, the C<Public> role is an anonymous role,
+or a C<password> or a C<captcha> parameter would be required here as
+well. This authentication method is called "per-request login".
+
+Alternatively, the user can login with his user name and MD5'd password
+first so as to obtain a session ID which can be used for subsequence
+requests. For example:
+
+  GET /=/login/agentzh.Admin/5f4dcc3b5aa765d61d8327deb882cf99 HTTP/1.0
+
+will yield an HTTP response from the OpenResty server like this:
+
+  HTTP/1.0 200 OK
+  Connection: close
+  Content-Type: text/json; charset=UTF-8
+  Content-Length: 133
+  Date: Mon, 21 Apr 2008 11:51:49 GMT
+
+  {
+      "success": 1,
+      "session": "535F265E-0F99-11DD-B185-1A3EB9E8D9B0",
+      "account": "agentzh","role":"Admin"
+  }
+
+And subsequent requests can be made by using the resulting session ID:
+
+  GET /=/model/Post/id/3?session=535F265E-0F99-11DD-B185-1A3EB9E8D9B0
+
+For convenience, the sample HTTP requests given throughout this document
+will not specify the C<user> nor the C<session> parameter explicitly.
+
+It's worth mentioning that the simple MD5 treatment of passwords in the
+current implementation is merely a hack and will be changed in the near
+future. It's highly recommended to use SSL for the password login method
+for any serious uses.
+
+=head2 Models
+
+An OpenResty model is just an abstract concept of tables found in common
+relational databases. An instance of an OpenResty model could be a
+blog post:
+
+  {
+    "description":"Blog post",
+    "columns": [
+      { "name":"title", "label":"Post title", "type":"text" },
+      { "name":"content", "label":"Post content", "type":"text" },
+      { "name":"author", "label":"Post author", "type":"text" },
+      { "name":"created", "default":["now()"],
+          "type":"timestamp (0) with time zone",
+          "label":"Post creation time" },
+      { "name":"comments", "label":"Number of comments",
+          "type":"integer", "default":0 }
+    ],
+  }
+
+This is approximately the C<Post> model used in my personal blog site
+L<http://blog.agentzh.org>. The rough SQL equivalence could be as follows:
+
+  create table "Post" (
+      title text,
+      content text,
+      author text,
+      created timestamp (0) with time zone default now(),
+      comments integer default 0
+  )
+
+Although the data storage backend may be truly implmented this way,
+the column types and names that can be used here are well defined and
+reasonably limited.
+
+After creating a model, one can insert data via an HTTP POST request:
+
+  POST /=/model/Post/~/~ HTTP/1.0
+  Content-Type: text/json
+  Content-Length: 111
+
+  {
+    "title":"My first post",
+    "content":"Blah blah blah...",
+    "author":"Agent Zhang"
+  }
+
+Multiple rows can be inserted at a time as well, but there's a limit.
+
+The model API not only offers interfaces to perform CRUD operations on
+models, columns, and rows, but also gives some simple but still powerful
+query functionalities. Here's an example:
+
+  GET /=/model/Post/author/agentzh?order_by=created:desc&count=10 HTTP/1.0
+
+which is roughly equivalent to the following standard SQL query:
+
+  select *
+  from "Post"
+  where "author" = 'agentzh'
+  order by created desc
+  count 10
+
+=head2 Views
+
+To address the problem of extending the limited data query interface
+provided by the model API, OpenResty integrates a view system in which
+the user can define reusable SQL-like queries by means of the RestyScript
+language. Here is an example:
+
+  POST /=/view/~ HTTP/1.0
+  Content-Type: text/json
+  Content-Length: 312
+
+  {
+    "name": "CommentsToAuthor",
+    "description": "Recent comments for the blog",
+    "definition": "
+         select Comment.sender as guest,
+                Comment.body as comment_body
+         from Comment, Post
+         where Comment.id = Post.id and Post.author = $author"
+  }
+
+In this sample, the string literal for the C<definition> slot has been
+splitted into multiple lines for readability. The RestyScript language
+for views is just a (non-strict) subset of the standard SQL language,
+thus giving powerful strucutred query capability to the user, which is
+often a missing feature in those highly-distributed and semi-structured
+data storage solutions like CouchDB and SimpleDB.
+
+Unlike SQL, however, the view definition can take one or more parameters
+(or named place-holders) which are required to feed values (unless
+they've got a default value) while invoking the view:
+
+  GET /=/view/CommentsToAuthor/author/agentzh
+
+Or equivalently
+
+  GET /=/view/CommentsToAuthor/~/~?author=agentzh
+
+The HTTP response from the OpenResty server might be
+
+  HTTP/1.0 200 OK
+  Connection: close
+  Content-Type: text/json; charset=UTF-8
+  Content-Length: 187
+  Date: Mon, 21 Apr 2008 12:42:15 GMT
+
+  [
+    {"guest":"laser","comment_body":"super cool!"},
+    {"guest":"carriezh","comment_body":"hello?hello?"},
+    {"guest":"agentzh":"comment_body":"Thanks for commenting!"}
+  ]
+
+=head2 Feeds
+
+OpenResty offers the feed objects which can be used to map OpenResty
+views to RSS 2.0 feeds. For instance, the OpenResty feed object for my
+blog posts looks like this:
+
+    {
+        "description": "Feed for blog posts",
+        "author": "agentzh",
+        "copyright": "Copyright 2008 by Yahoo! China EEEE Works",
+        "language": "zh-cn",
+        "title": "Posts for Human & Machine",
+        "link": "http://blog.agentzh.org",
+        "logo": "http://blog.agentzh.org/me.jpg",
+        "view": "PostFeed"
+    }
+
+and the C<PostFeed> view used to generate this view has the following
+definition:
+
+    {
+      "description":"View for post feed",
+      "definition":
+      "
+ select author, title, 'http://blog.agentzh.org/#post-' || id as link,
+        content, created as published,
+       'http://blog.agentzh.org/#post-' || id || ':comments' as comments
+ from Post
+ order by created desc
+ limit $count | 20
+      "
+    }
+
+Here the C<PostFeed> view takes one optional parameter C<$count> (with
+the default value C<20>), which controls the number of resulting rows
+returned.
+
+Not every view can be used to drive the feed generation. The resulting
+rows of the view must have the columns that make sense to the feed, like
+C<author>, C<title>, C<link>, C<content>, C<published>, and C<comments>.
+
+After creating the C<Post> feed in my C<agentzh> account, one can
+subscribe to the feed by the following GET request:
+
+  GET /=/feed/Post/~/~ HTTP/1.0
+
+Check L<http://api.eeeeworks.org/=/feed/Post/~/~> to see what the actual
+response looks like.
+
+One nice thing about the feed object is that it can forward arguments
+to the  view that drives it:
+
+  GET /=/feed/Post/count/100 HTTP/1.0
+
+This will produce the RSS 2.0 feed for the last 100 post entries rather
+than the default 20, giving more options to my blog readers.
+
+=head2 Actions
+
+B<Note:> Custom actions have not yet been implemented. Below is just
+some basic ideas.
+
+An openresty action is a bunch of RestyScript commands with a name
+attached to it. Such a command can be either a SQL-like statement or an
+HTTP-like command.
+
+An example for SQL-like commands could be
+
+    update Post
+    set comments = comments + 1
+    where id = $post_id"
+
+In this C<update> command, C<Post> is the name of an OpenResty model
+(assuming it's already there), C<comments> is one of its columns, and
+C<$post_id> is a parameter for the whole action (similar to parameters
+for views).
+
+An instance of HTTP-like commands could be
+
+    POST '/=/model/Comment/~/~'
+    { "sender": $sender, "body": $body, "post": $post_id }
+
+And we can put them together using the C<;> as the separator to define
+an action object:
+
+    {
+        "name": "PostComment",
+        "description": "Action for posting a comment",
+        "definition":
+        "
+            update Post
+            set comments = comments + 1
+            where id = $post_id";
+            POST '/=/model/Comment/~/~'
+            { "sender": $sender, "body": $body, "post": $post_id }
+        "
+    }
+
+We still split the definition string into multiple lines for
+readability. The C<PostComment> defined here takes 3 parameters,
+i.e. C<$post_id>, C<$sender>, and C<$body>.
+
+One can invoke the C<PostComment> action like this:
+
+    GET /=/action/PostComment/~/~?post_id=3&sender=marry&body=Haha
+    HTTP/1.0
+
+The server response would be an array of results for each command. If
+any of the commands fail, the whole action would fail. Even preious
+successful commands would be rolled back. That is, actions always run
+in a transaction.
+
+With actions the user can encapsulate multiple OpenResty REST requests
+as well as SQL-like C<update> and C<delete> statements as a whole and
+reuse as many times as he wishes. Such atomicity would be very useful
+in the context of captcha authentication. (See the L</Captchas> section
+for more information.)
+
+More interestingly it would be possilbe to call other actions or
+views in an action, or even call the action itself (i.e. recursive
+calling). Special constrains would be imposed on the length of call chain
+though. There would also be some limit regarding the number of commands
+grouped in an action.
+
+=head2 Captchas
+
+Captchas are just another way to do "per-request login" in addition to
+the C<anonymous> and C<password> login methods.
+
+Captcha support must be associated with some user-defined role whose
+"login" attribute is set to the value "C<captcha>", like this:
+
+    POST /=/role/CommentPoster HTTP/1.0
+    Content-Type: text/json
+    Content-Length: 64
+
+    {"description":"Role for posting comments","login": "captcha"}
+
+Therefore, it's not hard to see that it's not possible to do captchas
+with roles like C<Public> or C<Admin>.
+
+Then we should grant priviledges to the operations that need to performed
+by solving a capthca challenge:
+
+    POST /=/role/CommentPoster/~/~ HTTP/1.0
+    Content-Type: text/json
+    Content-Length: 48
+
+    {"method":"POST","url":"/=/model/Comment/~/~"}
+
+Then the clients (like the JavaScript code in a web page) could do
+the following:
+
+=over
+
+=item 1.
+
+Use C<GET /=/captcha/id> to obtain an ID from the OpenResty server.
+
+=item 2.
+
+Use the captcha ID, say, C<B44572D0-1038-11DD-B185-1A3EB9E8D9B0>, to
+fetch the catpcha image:
+
+    GET /=/captcha/id/B44572D0-1038-11DD-B185-1A3EB9E8D9B0 HTTP/1.0
+
+=item 3.
+
+Use the captcha ID as long as the captcha solution provided by the I<end
+user>, the following operation can be tried:
+
+    POST /=/model/Comment/~/~?user=agentzh.CommentPoster\
+        &captcha=B44572D0-1038-11DD-B185-1A3EB9E8D9B0:pretty%20cat \
+        HTTP/1.0
+    Content-Type: text/json
+    Content-Length: 52
+
+    {"sender":"agentzh","body":"Good post!","post":25}
+
+=back
+
+If the user solution C<pretty%20cat> provided in the C<captcha> URL
+parameter is incorrect, the server would reject the whole POST operation.
+
+=head2 Cross-site AJAX
+
+The OpenResty server opens a special door to JavaScript code running in
+a web page from the user's own domain, so as to allow REST requests get
+directly initiated from I<end> users' web browser.
+
+For GET requests, it's the common practice to do cross-domain AJAX
+requests via dynamically-created C<< <scrip> >> tags. To help the page
+owner do this trick with an OpenResty server, the special C<callback>
+URL parameter is supported to make the server returning JSON data wrapped
+by C<some_callback_func(> and C<);>. For example, the request
+
+  GET /=/view/RecentPosts/~/~?user=agentzh.Public&callback=foo HTTP/1.0
+
+yields something like this
+
+  HTTP/1.0 200 OK
+  Connection: close
+  Content-Type: application/x-javascript; charset=UTF-8
+  Content-Length: 74
+  Date: Mon, 21 Apr 2008 12:42:15 GMT
+
+  foo(
+    [
+        {"title":"My first post","id":1},
+        {"title":"My second one","id":2}
+    ]
+  );
+
+Note the extra stuff C<foo(...)> around the JSON data.
+
+POST, PUT, and DELETE requests all have their GET forms:
+
+    GET /=/post/...
+    GET /=/put/...
+    GET /=/delete/...
+
+where C<...> is the normal stuff in C<POST /=/...>, C<PUT /=/...>, and
+C<DELETE /=/...>, respectively. Some people might be nervous about GET
+requests doing data modification and cookies for authentication should
+always be excluded due to the risk of XSS attacks.
+
+To overcome the length limit of URLs, cross-site POST AJAX interface
+is also supported. Basically the user could use an HTML form in his web
+page like below:
+
+  <form action="/=/model/Comment/~/~?last_response=69bc45ec71ca7dc83cc"
+        method="POST"
+        onclick="onPostComment()"
+        target="myHiddenFrame">
+    <input type="hidden" name="data" value="{some JSON goes here...}">
+  </form>
+  <iframe id="myHiddenFrame" style="display: none"></iframe>
+
+and the browser may initiate a POST request when submitting this form:
+
+  POST /=/model/Comment/~/~?last_response=69bc45ec71ca7dc83cc HTTP/1.0
+  Content-Type: application/x-www-form-urlencoded
+  Content-Length: 23
+
+  data={some JSON goes here...}
+
+which is functionally equivalent to
+
+  POST /=/model/Comment/~/~
+  Content-Type: text/json
+  Content-Length: 23
+
+  {some JSON goes here...}
+
+with the exception that the OpenResty serser would save the response of
+the former POST request and allow the user to retrieve it later (using
+the same C<last_response> key):
+
+  GET /=/last/response/69bc45ec71ca7dc83cc
+
+Note that the C<last_response> key C<69bc45ec71ca7dc83cc> used here
+should betruly random and unique enough.
+
+The "last response" stuff is essential for the web page client to
+obtain the response for its POST request because there's no way for
+the JavaScript code to directly "look" into the target frame (i.e. the
+C<myHiddenFrame> iframe in the above sample) of another domain.
+
+As you might have already noticed, two HTTP roundtrips to do a true POST
+is a little too expensive. We'll use the cross-site cookies (as well as
+p3p headers for IE) to transfer the response for POST to the client-side
+JavaScript initiator.
+
+=head1 CLIENTS
+
+In theory, any programming languages or tools with basic HTTP 1.0 support
+would have access to all the OpenResty services.
+
+But to make things even easier, there are currently two special OpenResty
+client library for JavaScript and Perl:
+
+=over
+
+=item openresty.js
+
+See L<http://svn.openfoundry.org/openapi/trunk/clients/js/>.
+
+=item WWW::OpenResty
+
+See the L<WWW::OpenResty> module on CPAN. Most of the time one would
+just use its subclass L<WWW::OpenResty::Simple> which is much more handy.
+
+=back
+
+=head1 SAMPLE APPLICATIONS
+
+=over
+
+=item OpenResty's admin site
+
+L<http://resty.eeeeworks.org/admin/>
+
+=item agentzh's blog and EEEE Works' blog
+
+L<http://blog.agentzh.org>
+
+L<http://eeeeworks.org>
+
+=item Yisou BBS
+
+L<http://www.yisou.com/opi/post.html>
+
+=item An IRC bot, springbot
+
+L<http://svn.openfoundry.org/openapi/trunk/demo/Springbot/>
+
+=back
+
+Most of the sample apps' source code can be found at
+L<http://svn.openfoundry.org/openapi/trunk/demo/>.
+
+=head1 AUTHOR
+
+Agent Zhang C<< agentzh@yahoo.cn >>
+
+=head1 COPYRIGHT AND LICENSE
+
+  Copyright (c)  2008  Yahoo! China EEEE Works, Alibaba Inc.
+  Permission is granted to copy, distribute and/or modify this document
+  under the terms of the GNU Free Documentation License, Version 1.2
+  or any later version published by the Free Software Foundation;
+  with no Invariant Sections, no Front-Cover Texts, and no Back-Cover
+  Texts. A copy of the license can be found at
+
+    http://www.gnu.org/licenses/fdl.html
+
