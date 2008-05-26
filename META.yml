@@ -43,6 +43,8 @@ requires:
   Clone: 0.22
   Config::Simple: 0
   Cookie::XS: 0.09
+  Crypt::CBC: 0
+  Crypt::Rijndael: 0
   DBD::Pg: 1.49
   DBI: 1.57
   Data::Structure::Util: 0.15
@@ -54,11 +56,12 @@ requires:
   FCGI: 0
   GD::SecurityImage: 1.64
   Hash::Merge: 0
-  JSON::XS: 2.1
+  JSON::XS: 2.2
   List::MoreUtils: 0
   List::Util: 0
+  MIME::Base64: 0
   Params::Util: 0.22
   Parse::Yapp: 0
   YAML::Syck: 1.04
   perl: 5.6.1
-version: 0.2.2
+version: 0.3.1

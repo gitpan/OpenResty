@@ -1,0 +1,60 @@
+README
+======
+
+This is a RestyScript compiler for OpenResty written in Haskell.
+
+To build this program, you should first install GHC 6.8.2 (or better)
+and its Parsec library. On Ubuntu/Debian, the following commands would
+be sufficient:
+
+    $ sudo apt-get install ghc6 libghc6-parsec-dev
+
+The last two dependency, the json library and bytestring 0.9.1.0 (or
+better), requires a few more commands to install:
+
+    $ wget http://hackage.haskell.org/packages/archive/json/0.3.3/json-0.3.3.tar.gz
+    $ tar -xzf json-0.3.3.tar.gz
+    $ cd json-0.3.3
+    $ runghc Setup.hs configure --with-compiler=ghc-6.8.2
+    $ runghc Setup.hs build
+    $ sudo runghc Setup.hs install
+
+And for bytestring:
+
+    $ wget http://hackage.haskell.org/packages/archive/bytestring/0.9.1.0/bytestring-0.9.1.0.tar.gz
+    $ tar -xzf bytestring-0.9.1.0.tar.gz
+    $ cd bytestring-0.9.1.0/
+    $ runghc Setup.lhs configure
+    $ runghc Setup.lhs build
+    $ sudo runghc Setup.lhs install
+
+After that, you can build this compiler by the following command:
+
+    $ make
+
+The resulting binary executable will be bin/restyview
+
+One can play with it on the command line. For instance,
+
+    $ echo 'select 3.14' | bin/restyview ast rs
+    Query [Select [Float 3.14]]
+    select 3.14
+
+The first line of output is the internal AST (Abstract Syntax Tree)
+used by the compiler while the second line is the (canonicalized)
+RestyScript emtted from the AST. In the sample above, the resulting
+RestyScript output is exactly the same as the input.
+
+The compiler also comes with a test suite driven by Perl. The scaffold
+requires the CPAN modules Test::Base and IPC::Run3. Typically you can
+install these two by the following commands:
+
+    $ sudo cpan IPC::Run3 Test::Base
+
+To run the test suite, simply issue
+
+    $ make test
+
+The test cases in the test suite (e.g. t/emit-rs.t) tell you what
+the compiler is currently able to do ;)
+

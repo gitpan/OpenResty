@@ -11,11 +11,14 @@ use Encode::Guess;
 use Encode qw(from_to encode decode);
 use WWW::OpenResty::Simple;
 use Params::Util qw(_ARRAY);
+use Digest::MD5 qw(md5_hex);
 
 use LWP::UserAgent;
 my $ua = LWP::UserAgent->new;
 $ua->timeout(2);
 $ua->env_proxy;
+
+$SIG{CHLD} = "IGNORE";
 
 our @Brain = (
     [0 => qr{https?://[^\(\)（）？。]+} => \&process_url],
@@ -32,7 +35,6 @@ our %EncodingMap = (
     'euc-cn' => 'gbk',
     'big5-eten' => 'big5',
 );
-
 
 our $Resty;
 
@@ -100,8 +102,8 @@ sub said {
         if ($@) { $self->log_error($@); }
     };
     my $enc = guess_charset($text, $charset);
-    warn "msg in charset: $enc\n";
-    warn "Charset:  $charset\n";
+    log_error("msg in charset: $enc\n");
+    log_error("Charset:  $charset\n");
     #from_to($text, $enc, 'utf8');
     #warn length($orig_text);
     #if (length($orig_text) > 4 and $enc ne 'ascii' and $enc ne $charset and $text !~ /^\[\w+\]: /) {
@@ -144,7 +146,8 @@ sub log {
             eval {
                 $res = $Resty->post(
                     '/=/model/IrcLog/~/~',
-                    { user => $self->resty_account, password => $self->resty_password },
+                    { user => $self->resty_account,
+                      password => md5_hex($self->resty_password) },
                     {
                         channel => $channel,
                         sender  => $sender,

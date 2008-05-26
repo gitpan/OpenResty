@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.002002';
+our $VERSION = '0.003001';
 
 use strict;
 use warnings;
@@ -84,7 +84,7 @@ $Dumper = $ext2dumper{'.js'};
 $Importer = $ext2importer{'.js'};
 
 sub version {
-    (my $ver = $OpenResty::VERSION) =~ s{^(\d+)\.(\d{3})(\d{3})?$}{join '.', int($1), int($2), int($3)}e;
+    (my $ver = $OpenResty::VERSION) =~ s{^(\d+)\.(\d{3})(\d{3})$}{join '.', int($1), int($2), int($3)}e;
     $ver;
 }
 
@@ -541,10 +541,9 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.2.2 released on April 23, 2008.
+This document describes OpenResty 0.3.1 released on May 26, 2008.
 
 =head1 DESCRIPTION
-
 
 This module implements the server-side OpenResty web service protocol. It provides scriptable and extensible web services for both server-side and client-side (pure AJAX) web applications.
 
@@ -583,6 +582,10 @@ This library is still in B<pre-alpha> stage and the API is still in flux. We're 
 See L<OpenResty::Spec::Overview> for more detailed information.
 
 L<OpenResty::CheatSheet> also provides a good enough summary for the REST interface.
+
+You'll find my slides for the D2 conference interesting as well:
+
+L<http://agentzh.org/misc/openresty-d2.pdf>
 
 =head1 INSTALLATION
 
@@ -784,7 +787,7 @@ L<OpenResty::Spec::Overview>, L<OpenResty::Spec::REST>, L<OpenResty::CheatSheet>
 Copyright (c) 2007, 2008 by Yahoo! China EEEE Works, Alibaba Inc.
 
 This module is free software; you can redistribute it and/or
-modify it under the terms of either the Artistic License 2.0.
+modify it under the Artistic License 2.0.
 A copy of this license can be obtained from
 
 L<http://opensource.org/licenses/artistic-license-2.0.php>

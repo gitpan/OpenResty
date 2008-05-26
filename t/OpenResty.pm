@@ -1,6 +1,7 @@
 package t::OpenResty;
 
 use lib 'lib';
+use lib 'inc';
 use Test::Base -Base;
 use YAML::Syck ();
 #use JSON::Syck ();
@@ -158,6 +159,12 @@ sub run_test ($) {
         warn "No request section found in $name\n";
         return;
     }
+
+	my $sleep_before=$block->sleep_before;
+	if($sleep_before) {
+		sleep $sleep_before;
+	}
+
     my $charset = $block->charset || 'UTF-8';
     my $format = $block->format || 'JSON';
     my $res_type = $block->res_type;
@@ -185,6 +192,7 @@ sub run_test ($) {
         my $res = $client->request($body, $method, $url);
         if ($should_skip) { return; }
         ok $res->is_success, "request returns OK - $name";
+        if (!$res->is_success) { warn $res->status_line }
         #warn $res->content, '!!!!!!!!!!!!!!!';
         my $expected_res = $block->response || $block->response_like;
         if ($expected_res) {
@@ -216,6 +224,11 @@ sub run_test ($) {
         } else {
             like $res->header('Content-Type'), qr/\Q; charset=$charset\E$/, "charset okay - $name";
         }
+
+		my $sleep_after=$block->sleep_after;
+		if($sleep_after) {
+			sleep $sleep_after;
+		}
     } else {
         my ($firstline) = ($request =~ /^([^\n]*)/s);
         die "Invalid request head: \"$firstline\" in $name\n";

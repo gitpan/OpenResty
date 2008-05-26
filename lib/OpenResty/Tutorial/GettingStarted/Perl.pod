@@ -1,0 +1,121 @@
+=encoding utf8
+
+=head1 NAME
+
+OpenResty::Tutorial::GettingStarted::Perl - Zero to OpenResty for Perl
+programmers
+
+=head1 DESCRIPTION
+
+This tutorial should give you everything you need to start with an
+OpenResty account using Perl.
+
+=head1 Prerequisites
+
+=over
+
+=item An OpenResty account
+
+You should already have an account on an OpenResty server. You can
+either set up an OpenResty server on your own machine or just request an
+account on our Yahoo! China's production server by sending an email to
+C<agentzh@yahoo.cn>. If you're running your own instance of the OpenResty
+server, you can use the following command to create an account (named
+C<foo>) for yourself:
+
+    $ bin/openresty adduser foo
+
+You'll be prompted to enter a password for the C<Admin> role of your
+C<foo> account.
+
+Throughout this tutorial, we'll assume you own an account named C<foo>
+whose C<Admin> role's password is C<hello1234>. And the account belongs
+to the server C<resty.eeeeworks.org>.
+
+=item L<WWW::OpenResty::Simple>
+
+Because OpenResty's API is totally RESTful, that is, it's totally
+HTTP based. So it's completely okay to directly use a general HTTP
+client libary like L<LWP::UserAgent>. But to make things even easier,
+we'll stick with a CPAN module, L<WWW::OpenResty::Simple>, throughout the
+tutorial. In case you don't know, installing the L<WWW::OpenResty::Simple>
+module is as simple as
+
+    $ sudo cpan WWW::OpenResty::Simple
+
+Commands will differ slightly if you're on Win32:
+
+    C:\>cpan WWW::OpenResty::Simple
+
+=back
+
+Note that if you use an account on others' OpenResty servers (like ours),
+you need I<not> install the hairy L<OpenResty> module on CPAN.
+
+=head1 Login
+
+There's various different ways to login to your OpenResty account. But
+in a Perl script,
+we usually use the default L<Admin> role with full priviledges:
+
+    use strict;
+    use warnings;
+    use utf8;
+    use WWW::OpenResty::Simple;
+
+    my $resty = WWW::OpenResty::Simple->new(
+      { server => 'resty.eeeeworks.org' }
+    );
+    $resty->login('foo', 'hello1234');
+
+The first statement loads the L<WWW::OpenResty::Simple> module which
+we'll be using exclusively to manipulate our account.
+And in the second one, we created an instance of the
+L<WWW::OpenResty::Simple> class with the domain of the OpenResty
+server we're using. It might be a different value on your side
+(i.e. C<localhost>) if you're running your own instance of server.
+
+It's not good practice to hard code your password explicitly in your
+scripts. I wrote the sample code this way merely for the demonstration
+purpose.
+
+=head1 Just Mudding Around
+
+Usually we use OpenResty as a RESTy database. As with traditional
+relational database systems like mysql and PostgreSQL, we start by
+creating a "data schema". In OpenResty, C<Models> often resembles database
+tables (but they could be something else as well). You can define a new
+C<Model> like this:
+
+    $resty->post(
+        '/=/model/Post',
+        {
+            description => 'blog posts',
+            columns => [
+                { name => 'author', default => 'Anonymous' },
+                { name => 'title', default => 'No title' },
+                { name => 'content' },
+                { name => 'created',
+                  type => 'timestamp (0) with time zone',
+                  default => ['now()'] },
+                { name => 'comments', type => 'integer', default => 0 }
+            ]
+        }
+    );
+
+L<WWW::OpenResty::Simple> objects' C<post> method will issue an HTTP C<POST> command behind the scene.
+
+=head1 Importing huge amount of data
+
+=head1 Sharing your data with others
+
+=head1 Keeping a data backup at your localhost
+
+=head1 Where to go from here
+
+=head1 AUTHOR
+
+Agent Zhang (agentzh) C<agentzh@yahoo.cn>
+
+Copyright (c) 2007 by Yahoo! China EEEE Works, Alibaba Inc.
+

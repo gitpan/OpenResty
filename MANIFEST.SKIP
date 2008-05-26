@@ -1,4 +1,15 @@
+.par$
 \.swp$
+demo/Blog/graphviz\.dot$
+demo/Click4honor/openresty\.js$
+demo/Springbot/staff/staff_files
+\.hi$
+\.ho$
+\.o$
+^openresty-\d+\.\d+\.\d+/
+^haskell/.*\.sql$
+^haskell/.*\.png$
+^haskell/bin/restyview$
 ^Makefile$
 ^bin/\.
 ~$
@@ -27,6 +38,7 @@ bin/.*\.dat
 ^demo/Blog2/.*\.json
 ^demo/Blog2/script/reset\.mk
 ^demo/Blog2/script/upload
+^demo/Blog2/script/init\.pl
 ^demo/Admin/template/exceptions.tt
 ^demo/Admin/template/page-rent.tt
 ^demo/Admin/template/page-secondary.tt
