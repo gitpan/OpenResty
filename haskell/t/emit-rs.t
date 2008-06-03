@@ -271,14 +271,18 @@ select "select", 0.125 from "from" where ("where" > "or" or ("and" < "and" and "
 === TEST 27: signed negative numbers
 --- in
 select -3 , - 3 , -1.25,- .3
+--- ast
+Query [Select [Minus (Integer 3),Minus (Integer 3),Minus (Float 1.25),Minus (Float 0.3)]]
 --- out
-select -3, -3, -1.25, -0.3
+select (-3), (-3), (-1.25), (-0.3)
 
 
 
 === TEST 28: signed positive numbers
 --- in
 select +3 , + 3 , +1.25,+ .3 , 1
+--- ast
+Query [Select [Plus (Integer 3),Plus (Integer 3),Plus (Float 1.25),Plus (Float 0.3),Integer 1]]
 --- out
 select 3, 3, 1.25, 0.3, 1
 
@@ -467,4 +471,24 @@ from Post
 where 'hello' > 'グループ'
 --- out
 select '你好么？哈哈哈' from "Post" where 'hello' > 'グループ'
+
+
+
+=== TEST 50: precedence of -
+--- in
+select -3::"text";
+--- ast
+Query [Select [Minus (TypeCast (Integer 3) (Column (Symbol "text")))]]
+--- out
+select (-3::"text")
+
+
+
+=== TEST 51: precedence of -
+--- in
+select (-3)::"text";
+--- ast
+Query [Select [TypeCast (Minus (Integer 3)) (Column (Symbol "text"))]]
+--- out
+select (-3)::"text"
 
