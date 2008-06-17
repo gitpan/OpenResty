@@ -1,6 +1,6 @@
 Change Log for OpenResty
 
-0.3.3 June 17 2008
+0.3.4 June 17 2008
 * Optimized the server by reducing DB queries via agressive user of caching.
 * Bypassed some checks for builtin roles Admin and Public to reduce DB uses.
 * Added tsearch2 related data types tsvector and tsquery to the Model API.
