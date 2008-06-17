@@ -57,6 +57,8 @@ requires:
   FCGI: 0
   GD::SecurityImage: 1.64
   Hash::Merge: 0
+  IPC::Run: 0
+  IPC::Run3: 0
   JSON::XS: 2.2
   List::MoreUtils: 0
   List::Util: 0
@@ -65,4 +67,4 @@ requires:
   Parse::Yapp: 0
   YAML::Syck: 1.04
   perl: 5.6.1
-version: 0.3.2
+version: 0.3.3

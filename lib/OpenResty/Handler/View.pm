@@ -3,6 +3,7 @@ package OpenResty::Handler::View;
 use strict;
 use warnings;
 
+#use Smart::Comments;
 use OpenResty::Util;
 use Params::Util qw( _HASH _STRING );
 use OpenResty::Limits;
@@ -35,6 +36,19 @@ sub get_views {
     return $openresty->select("$select", { use_hash => 1 });
 }
 
+sub get_view_names {
+    my ($self, $openresty) = @_;
+    my $select = OpenResty::SQL::Select->new(
+        qw< name >
+    )->from('_views');
+    my $res = $openresty->select("$select");
+    ### $res
+    if ($res && ref $res && ref $res->[0]) {
+        @$res = map { @$_ } @$res;
+    }
+    $res;
+}
+
 sub GET_view_list {
     my ($self, $openresty, $bits) = @_;
     my $views = $self->get_views($openresty);
@@ -63,6 +77,7 @@ sub GET_view {
 
 sub PUT_view {
     my ($self, $openresty, $bits) = @_;
+    my $user = $openresty->current_user;
     my $view = $bits->[1];
     my $data = _HASH($openresty->{_req_data}) or
         die "column spec must be a non-empty HASH.\n";
@@ -77,6 +92,7 @@ sub PUT_view {
     if (defined $new_name) {
         _IDENT($new_name) or
             die "Bad view name: ", $OpenResty::Dumper->($new_name), "\n";
+        $OpenResty::Cache->remove_has_view($user, $view);
         $update->set( name => Q($new_name) );
     }
 
@@ -142,6 +158,7 @@ sub exec_view {
 
 sub GET_view_exec {
     my ($self, $openresty, $bits) = @_;
+    my $user = $openresty->current_user;
     my $view = $bits->[1];
 
     die "View \"$view\" not found.\n" unless $openresty->has_view($view);
@@ -217,6 +234,7 @@ sub new_view {
 
 sub DELETE_view {
     my ($self, $openresty, $bits) = @_;
+    my $user = $openresty->current_user;
     my $view = $bits->[1];
     _IDENT($view) or $view eq '~' or
         die "Bad view name: ", $OpenResty::Dumper->($view), "\n";
@@ -226,12 +244,20 @@ sub DELETE_view {
     if (!$openresty->has_view($view)) {
         die "View \"$view\" not found.\n";
     }
+    $OpenResty::Cache->remove_has_view($user, $view);
     my $sql = "delete from _views where name = " . Q($view);
     return { success => $openresty->do($sql) >= 0 ? 1 : 0 };
 }
 
 sub DELETE_view_list {
     my ($self, $openresty, $bits) = @_;
+    my $user = $openresty->current_user;
+
+    my $views = $self->get_view_names($openresty);
+    for my $view (@$views) {
+        #warn "View $view...\n";
+        $OpenResty::Cache->remove_has_view($user, $view);
+    }
     my $sql = "truncate _views;";
     return { success => $openresty->do($sql) >= 0 ? 1 : 0 };
 }

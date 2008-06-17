@@ -141,19 +141,13 @@ sub process_request {
 
     # XXX hacks...
     my $cookies = Cookie::XS->fetch;
-    my ($session_from_cookie, $captcha_from_cookie);
+    my $session_from_cookie;
     my $session;
     if ($cookies) {
         my $cookie = $cookies->{session};
         if ($cookie) {
             $openresty->{_session_from_cookie} =
                 $session_from_cookie = $cookie->[-1];
-        }
-        $cookie = $cookies->{captcha};
-        if ($cookie) {
-            $openresty->{_captcha_from_cookie} =
-                $captcha_from_cookie = $cookie->[-1];
-            #$OpenResty::Cache->remove($captcha_from_cookie);
         }
     }
 
@@ -163,7 +157,7 @@ sub process_request {
             $openresty->fatal("No last response ID specified.");
             return;
         }
-        my $res = $OpenResty::Cache->get("lastres:".$last_res_id);
+        my $res = $OpenResty::Cache->get_last_res($last_res_id);
         if (!defined $res) {
             $openresty->fatal("No last response found for ID $last_res_id");
             return;
@@ -240,13 +234,14 @@ sub process_request {
     }
 
     # XXX check ACL rules...
-    if ($key !~ /^(?:login|logout|captcha|version)$/) {
-        my $res = $openresty->current_user_can($http_meth => \@bits);
-        if (!$res) {
-            $openresty->fatal("Permission denied for the \"$role\" role.");
-            return;
+    if (!defined $role || $role ne 'Admin') {
+        if ($key !~ /^(?:login|logout|captcha|version)$/) {
+            my $res = $openresty->current_user_can($http_meth => \@bits);
+            if (!$res) {
+                $openresty->fatal("Permission denied for the \"$role\" role.");
+                return;
+            }
         }
-    } else {
     }
 
     my $category = $Dispatcher{$key};

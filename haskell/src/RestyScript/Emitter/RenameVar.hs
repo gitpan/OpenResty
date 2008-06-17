@@ -1,11 +1,11 @@
-module RestyView.Emitter.RenameVar where
+module RestyScript.Emitter.RenameVar where
 
 import Text.ParserCombinators.Parsec.Pos (
     SourcePos, incSourceColumn,
     updatePosChar, setSourceLine, setSourceColumn)
-import RestyView.AST
+import RestyScript.AST
 
-findVar :: String -> SqlVal -> [SourcePos]
+findVar :: String -> RSVal -> [SourcePos]
 findVar var node =
     case node of
         Variable pos name | name == var
@@ -20,7 +20,7 @@ rename src@(c:cs) pos varPos@(p:ps) varLen newVar
 rename [] _ _ _ _ = ""
 rename src _ [] _ _ = src
 
-emit :: SqlVal -> String -> String -> String -> String
+emit :: RSVal -> String -> String -> String -> String
 emit ast input oldVar newVar =
     let varPos = traverse (findVar oldVar) (++) ast
     in if null varPos

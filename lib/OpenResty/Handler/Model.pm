@@ -20,6 +20,8 @@ sub check_type {
                     cidr |
                     inet |
                     macaddr |
+                    tsquery |
+                    tsvector |
                     bit \s* \( \s* \d+ \s* \) |
                     boolean |
                     text |
@@ -41,6 +43,7 @@ sub check_type {
 
 sub DELETE_model_list {
     my ($self, $openresty, $bits) = @_;
+    my $user = $openresty->current_user;
     my $res = $self->get_tables($openresty);
     if (!$res) {
         return { success => 1 };
@@ -50,6 +53,7 @@ sub DELETE_model_list {
 
     my $sql;
     for my $table (@tables) {
+        $OpenResty::Cache->remove_has_model($user, $table);
         $sql .= $self->drop_table($openresty, $table);
     }
     if ($sql) {
@@ -607,6 +611,8 @@ sub has_model_col {
 
 sub drop_table {
     my ($self, $openresty, $table) = @_;
+    my $user = $openresty->current_user;
+    $OpenResty::Cache->remove_has_model($user, $table);
     return (<<_EOC_);
 drop table if exists "$table";
 delete from _models where table_name='$table';
@@ -897,6 +903,7 @@ sub alter_model {
     my $openresty = $_[0];
     my $model = _IDENT($_[1]) or die "Invalid model name \"$_[1]\".\n";
     my $data = _HASH($_[2]) or die "HASH expected in the PUT content.\n";
+    my $user = $openresty->current_user;
     my $table = $model;
     if (!$openresty->has_model($model)) {
         die "Model \"$model\" not found.\n";
@@ -910,6 +917,7 @@ sub alter_model {
         if ($openresty->has_model($new_model)) {
             die "Model \"$new_model\" already exists.\n";
         }
+        $OpenResty::Cache->remove_has_model($user, $model);
         my $new_table = $new_model;
         $sql .=
             "update _models set table_name='$new_table', name='$new_model' where name='$model';\n" .

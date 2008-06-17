@@ -13,13 +13,23 @@ run {
     my $desc = $block->description;
     my ($stdout, $stderr);
     my $stdin = $block->in;
-    run3 [qw< bin/restyview ast rs >], \$stdin, \$stdout, \$stderr;
-    is $? >> 8, 0, "compiler returns 0 - $desc";
-    warn $stderr if $stderr;
+    run3 [qw< bin/restyscript view ast rs >], \$stdin, \$stdout, \$stderr;
+    if (defined $block->error) {
+        is $? >> 8, 1, "compiler returns 0 - $desc";
+    } else {
+        is $? >> 8, 0, "compiler returns 0 - $desc";
+    }
+    if (defined $block->error && $stderr) {
+        $stderr =~ s/^expecting .*\n//ms;
+        is $stderr, $block->error, "expected error msg - $desc";
+        return;
+    } elsif ($stderr) {
+        warn $stderr
+    }
     my @ln = split /\n+/, $stdout;
     my $ast = $block->ast;
     if (defined $ast) {
-        $ln[0] =~ s/"RestyView" \(line (\d+), column (\d+)\)/($1,$2)/gs;
+        $ln[0] =~ s/"view" \(line (\d+), column (\d+)\)/($1,$2)/gs;
         is "$ln[0]\n", $ast, "AST ok - $desc";
     }
     my $out = $block->out;
@@ -30,7 +40,7 @@ __DATA__
 
 === TEST 1: basic
 --- in
-select foo, bar from Bah
+    select foo, bar from Bah
 --- ast
 Query [Select [Column (Symbol "foo"),Column (Symbol "bar")],From [Model (Symbol "Bah")]]
 --- out
@@ -40,7 +50,8 @@ select "foo", "bar" from "Bah"
 
 === TEST 2: select only
 --- in
-select foo
+   
+  select foo ; ;; 
 --- ast
 Query [Select [Column (Symbol "foo")]]
 --- out
@@ -50,7 +61,7 @@ select "foo"
 
 === TEST 3: spaces around separator (,)
 --- in
-select id,name , age from  Post , Comment
+select id,name , age from  Post , Comment;
 --- ast
 Query [Select [Column (Symbol "id"),Column (Symbol "name"),Column (Symbol "age")],From [Model (Symbol "Post"),Model (Symbol "Comment")]]
 --- out
@@ -491,4 +502,147 @@ select (-3)::"text";
 Query [Select [TypeCast (Minus (Integer 3)) (Column (Symbol "text"))]]
 --- out
 select (-3)::"text"
+
+
+
+=== TEST 52: distinct
+--- in
+select distinct * from "Boh";
+--- ast
+Query [Select [Distinct [AnyColumn]],From [Model (Symbol "Boh")]]
+--- out
+select distinct * from "Boh"
+
+
+
+=== TEST 53: union all
+--- in
+select 2 union all select 2;
+--- out
+((select 2) union all (select 2))
+
+
+
+=== TEST 54: intersect all
+--- in
+select 2 intersect all select -2.0;
+--- out
+((select 2) intersect all (select (-2.0)))
+
+
+
+=== TEST 55: except all
+--- in
+select * from "chen" except all select * from chen_bak
+--- out
+((select * from "chen") except all (select * from "chen_bak"))
+
+
+
+=== TEST 56: distinct in count
+--- in
+select count(distinct rev) + 1 - 5 from logs
+--- out
+select (("count"(distinct "rev") + 1) - 5) from "logs"
+
+
+
+=== TEST 57: distinct in column
+--- in
+select distinct rev from logs
+--- out
+select distinct "rev" from "logs"
+
+
+
+=== TEST 58: $q$...$q$
+--- in
+select $q$'abc\'$q$ from Hello
+--- out
+select '''abc\\''' from "Hello"
+
+
+
+=== TEST 59: $_$...$_$
+--- in
+select $_$hello," world$_$ from Hello
+--- out
+select 'hello," world' from "Hello"
+
+
+
+=== TEST 60: $_123a_$...$_123a_$
+--- in
+select $_123a_$hello,"'\ world$_123a_$ from Hello
+--- out
+select 'hello,"''\\ world' from "Hello"
+
+
+
+=== TEST 61: $q$$q$
+--- in
+select $q$$q$;
+--- out
+select ''
+
+
+
+=== TEST 62: $$..$$
+--- in
+select $$$$, $$abc$$;
+--- out
+select '', 'abc'
+
+
+
+=== TEST 63: true and false and null
+--- in
+select true, false, null
+--- out
+select true, false, null
+
+
+
+=== TEST 64: where bool
+--- in
+select *
+from Post
+where true
+--- out
+select * from "Post" where true
+
+
+
+=== TEST 65: where bool and bool
+--- in
+select *
+from Post
+where true and false
+--- out
+select * from "Post" where (true and false)
+
+
+
+=== TEST 66: @@
+--- in
+select * from table where field @@ to_tsquery('chinesecfg', $keyword)
+--- out
+select * from "table" where "field" @@ "to_tsquery"('chinesecfg', $keyword)
+
+
+
+=== TEST 67: Test potential ambiguity between variables and verbatim quotes (the wrong way)
+--- in
+select $foo , $foo$hello$foo from Post
+--- error
+"view" (line 1, column 19):
+unexpected "$"
+
+
+
+=== TEST 68: Test potential ambiguity between variables and verbatim quotes (the right way)
+--- in
+select $foo , $foo$hello$foo$ from Post
+--- out
+select $foo, 'hello' from "Post"
 

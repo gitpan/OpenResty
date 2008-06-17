@@ -6,6 +6,8 @@ use FindBin;
 
 # This is a hack...
 
+our $NoTrivial = 0;
+
 sub new {
     my $class = ref $_[0] ? ref shift : shift;
     my $params = shift;
@@ -35,13 +37,18 @@ sub new {
     } else {
         die "Invalid cache.type value: $type\n";
     }
+    my $backend_type = $OpenResty::Config{'backend.type'} || '';
+    $NoTrivial = $OpenResty::Config{'backend.recording'} ||
+        $backend_type eq 'PgMocked';
+
     $self->{obj} = $obj;
     return $self;
 }
 
 # expire_in is in seconds...
 sub set {
-    my ($self, $key, $val, $expire_in) = @_;
+    my ($self, $key, $val, $expire_in, $trivial) = @_;
+    return undef if $trivial && $NoTrivial;
     $self->{obj}->set($key, $val, $expire_in);
 }
 
@@ -57,6 +64,69 @@ sub remove {
     } else {
         $obj->delete(@_);
     }
+}
+
+## ------------------------
+
+sub get_has_user {
+    my ($self, $user) = @_;
+    $self->get("hasuser:$user")
+}
+
+sub set_has_user {
+    my ($self, $user) = @_;
+    $self->set("hasuser:$user", 1, 3600, 'trivial');
+}
+
+sub remove_has_user {
+    my ($self, $user) = @_;
+    $self->remove("hasuser:$user");
+}
+
+sub get_last_res {
+    my ($self, $id) = @_;
+    $self->get("lastres:$id");
+}
+
+sub set_last_res {
+    my ($self, $id, $val) = @_;
+    $self->set("lastres:$id", $val, 5 * 60);
+}
+
+sub remove_last_res {
+    my ($self, $id) = @_;
+    $self->remove("lastres:".$id);
+}
+
+sub get_has_model {
+    my ($self, $user, $model) = @_;
+    $self->get("hasmodel:$user:$model")
+}
+
+sub set_has_model {
+    my ($self, $user, $model) = @_;
+    $self->set("hasmodel:$user:$model", 1, 3 * 60, 'trivial');
+}
+
+sub remove_has_model {
+    my ($self, $user, $model) = @_;
+    $self->remove("hasmodel:$user:$model");
+}
+
+sub get_has_view {
+    my ($self, $user, $view) = @_;
+    #return undef;
+    $self->get("hasview:$user:$view")
+}
+
+sub set_has_view {
+    my ($self, $user, $view) = @_;
+    $self->set("hasview:$user:$view", 1, 3 * 60, 'trivial');
+}
+
+sub remove_has_view {
+    my ($self, $user, $view) = @_;
+    $self->remove("hasview:$user:$view");
 }
 
 1;

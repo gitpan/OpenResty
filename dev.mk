@@ -3,7 +3,9 @@ define CMDS
     -perl -Iblib -c bin/openresty
     -sudo killall lighttpd
     sudo /etc/init.d/lighttpd restart
-    rm  -f t/cur-timer.dat
+    sleep 2
+    -sudo rm -rf /tmp/FileCache
+    -rm  -f t/cur-timer.dat
     -time prove -Ilib -r t
     bin/perf
 endef
@@ -17,16 +19,15 @@ test: all
 	$(CMDS)
 
 debug: all
-	sudo echo > /var/log/lighttpd/error.log
 	$(CMDS)
-	cat /var/log/lighttpd/error.log | egrep -v '^$$'
 
 %.t: all force
-	sudo echo > /var/log/lighttpd/error.log
 	perl -c bin/openresty
 	sudo /etc/init.d/lighttpd restart
-	-time prove -Ilib $@
-	cat /var/log/lighttpd/error.log | egrep -v '^$$'
+	-sudo rm -rf /tmp/FileCache
+	-rm  -f t/cur-timer.dat
+	-prove -Ilib $@
+	bin/perf
 
 force:
 

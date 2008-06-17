@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003002';
+our $VERSION = '0.003003';
 
 use strict;
 use warnings;
@@ -117,9 +117,6 @@ sub init {
         OpenResty->connect($backend);
         #die "Backend connection lost: ", $db_state, "\n";
     }
-
-    my $as_html = $cgi->url_param('as_html') || 0;
-    $self->{_as_html} = $as_html;
 
     $self->{_use_cookie}  = $cgi->url_param('use_cookie') || 0;
     $self->{_session}  = $cgi->url_param('session');
@@ -313,8 +310,7 @@ sub response {
     }
 
     print "HTTP/1.1 200 OK\n";
-    my $as_html = $self->{_as_html};
-    my $type = $self->{_type} || ($as_html ? 'text/html' : 'text/plain');
+    my $type = $self->{_type} || 'text/plain';
     #warn $s;
     my $str = '';
     if (my $bin_data = $self->{_bin_data}) {
@@ -361,17 +357,13 @@ sub response {
     }
     $str =~ s/\n+$//s;
 
-    if ($as_html) {
-        $str = "<html><body><script type=\"text/javascript\">parent.location.hash = ".$Dumper->($str)."</script></body></html>";
-    }
-
     my $meth = $self->{_http_method};
     my $last_res_id = $cgi->url_param('last_response');
     ### $last_res_id;
     ### $meth;
     if (defined $last_res_id) {
         #warn "!!!!!!!!!!!!!!!!!!!!!!!!!!wdy!";
-        $Cache->set("lastres:".$last_res_id, $str); # expire in 3 min
+        $Cache->set_last_res($last_res_id, $str);
     }
     #warn ">>>>>>>>>>>>Cookies<<<<<<<<<<<<<<: @cookies\n";
     print $cgi->header(
@@ -407,13 +399,16 @@ sub emit_data {
 
 sub has_role {
     my ($self, $role) = @_;
+    return 1 if $role eq 'Admin' or $role eq 'Public'; # shortcut...
     _IDENT($role) or
         die "Bad role name: ", $OpenResty::Dumper->($role), "\n";
-    my $select = OpenResty::SQL::Select->new('count(*)')
+    my $select = OpenResty::SQL::Select->new('id')
         ->from('_roles')
         ->where(name => Q($role))
         ->limit(1);
-    return $self->select("$select")->[0][0];
+    my $ret;
+    eval { $ret = $self->select("$select",)->[0][0]; };
+    return $ret;
 }
 
 sub current_user_can {
@@ -442,51 +437,66 @@ sub has_feed {
 
     _IDENT($feed) or die "Bad feed name: $feed\n";
 
-    my $select = OpenResty::SQL::Select->new('count(name)')
+    my $select = OpenResty::SQL::Select->new('id')
         ->from('_feeds')
-        ->where(name => Q($feed));
-    return $self->select("$select",)->[0][0];
+        ->where(name => Q($feed))
+        ->limit(1);
+    my $ret;
+    eval { $ret = $self->select("$select")->[0][0]; };
+    return $ret;
 }
 
 sub has_view {
     my ($self, $view) = @_;
+    my $user = $self->current_user;
 
     _IDENT($view) or die "Bad view name: $view\n";
 
-    my $select = OpenResty::SQL::Select->new('count(name)')
+    if ($Cache->get_has_view($user, $view)) {
+        #warn "has view cache HIT\n";
+        return 1;
+    }
+    #warn "HERE!!! has_view: $view";
+    my $select = OpenResty::SQL::Select->new('id')
         ->from('_views')
         ->where(name => Q($view))
         ->limit(1);
-    return $self->select("$select",)->[0][0];
+    my $ret;
+    eval { $ret = $self->select("$select")->[0][0]; };
+    if ($ret) { $Cache->set_has_view($user, $view) }
+    return $ret;
 }
 
 sub has_model {
     my ($self, $model) = @_;
+    my $user = $self->current_user;
     _IDENT($model) or die "Bad model name: $model\n";
-    my $retval;
-    my $select = OpenResty::SQL::Select->new('count(name)')
+    if ($Cache->get_has_model($user, $model)) {
+        #warn "has model cache HIT\n";
+        return 1;
+    }
+    my $select = OpenResty::SQL::Select->new('id')
         ->from('_models')
         ->where(name => Q($model))
         ->limit(1);
-    eval {
-        $retval = $self->select("$select")->[0][0];
-    };
-    return $retval + 0;
+    my $ret;
+    eval { $ret = $self->select("$select")->[0][0]; };
+    if ($ret) { $Cache->set_has_model($user, $model) }
+    return $ret;
 }
 
 sub has_user {
     my ($self, $user) = @_;
-    return $Backend->has_user($user);
-}
-
-sub add_user {
-    my ($self, $user) = @_;
-    $Backend->add_user($user);
-}
-
-sub drop_user {
-    my ($self, $user) = @_;
-    $Backend->drop_user($user);
+    if ($user && $Cache->get_has_user($user)) {
+        #warn "Cache hit for has_user!";
+        return 1;
+    } else {
+        my $res = $Backend->has_user($user);
+        if ($res) {
+            $Cache->set_has_user($user);
+        }
+        return $res;
+    }
 }
 
 sub set_user {
@@ -497,6 +507,7 @@ sub set_user {
 
 sub current_user {
     my ($self) = @_;
+    # warn "!!!", $self->{_user};
     $self->{_user};
 }
 
@@ -541,7 +552,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.2 released on June 3, 2008.
+This document describes OpenResty 0.3.3 released on June 17, 2008.
 
 =head1 DESCRIPTION
 
@@ -635,20 +646,13 @@ Most of the time, you need to change C<type=PgMocked> to C<type=Pg>, as well as 
 
 =item 4.
 
-Give read/write access to lighttpd's log file (optional):
-
-    $ chmod 777 /var/log/lighttpd/error.log
-    $ chmod 777 /var/log/lighttpd
-
-=item 5.
-
 For the Pg backend, one needs to create the "anonymous" role in his database (like "test"):
 
     $ createuser -r anonymous
 
 You shouldn't grant any permissions to it.
 
-=item 6.
+=item 5.
 
 Create a "tester" user account for our test suite in OpenResty (drop it if it already exists):
 
@@ -661,11 +665,39 @@ Give a password (say, "password") to its Admin role. Update your F<etc/site_open
     use_http=0
     server=tester:password@localhost
 
+=item 6.
+
+To have OpenResty's built-in actions C<RunView> and C<RunAction> working, you
+need to build the F<restyscript> compiler in the subdirectory F<haskell/>. It
+is written in Haskell and please see the README file in F<haskell/> for
+detailed installation instruction:
+
+L<http://svn.openfoundry.org/openapi/trunk/haskell/README>
+
+If you're really nervous about installing GHC and other Haskell libraries,
+you can fetch a binary version of the F<restyscript> compiler if you're
+on an 32-bit x86 linux:
+
+    $ wget 'http://resty.eeeeworks.org/restyscript' -O haskell/bin/restyscript
+    $ chmod +x haskell/bin/restyscript
+
+A quick test would be
+
+    $ echo 'select 3' | haskell/bin/restyscript view rs
+    select 3
+
+=item 7.
+
 Now you can already run the test suite without a lighttpd server (but with a true Pg backend):
 
     $ make test
 
-=item 7.
+Also, it's already possible to start the OpenResty server using the standalone server provided by L<HTTP::Server::Simple>:
+
+    $ bin/openresty start
+    HTTP::Server::Simple: You can connect to your server at http://localhost:8000/
+
+=item 8.
 
 Sample lighttpd configuration:
 
@@ -700,7 +732,7 @@ And also make sure the following line is commented out:
 
 =back
 
-HOW TO TEST ONE SPECIFIC TEST SUITE FILE
+=head2 HOW TO TEST ONE SPECIFIC TEST SUITE FILE
 
 It's also possible to debug a simple .t file, for instance,
 

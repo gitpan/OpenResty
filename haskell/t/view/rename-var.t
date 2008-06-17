@@ -18,7 +18,7 @@ run {
     my $rename = $block->rename;
     if (!$rename) { die "No rename section defined for $desc" }
     my ($old, $new) = split /\s+/, $rename;
-    run3 [qw< bin/restyview rename >, $old, $new],
+    run3 [qw< bin/restyscript view rename >, $old, $new],
         \$stdin, \$stdout, \$stderr;
     is $? >> 8, 0, "compiler returns 0 - $desc";
     warn $stderr if $stderr;
@@ -137,4 +137,22 @@ select $foo(3)
 --- rename: foo bar
 --- out
 select $bar(3)
+
+
+
+=== TEST 12: prefix -/+/not
+--- in
+select -$foo, +$foo where not $foo > 3
+--- rename: foo bar
+--- out
+select -$bar, +$bar where not $bar > 3
+
+
+
+=== TEST 13: verbatim quotes' noises
+--- in
+select $foo , $foo$hello$foo$ from Post
+--- rename: foo bar
+--- out
+select $bar , $foo$hello$foo$ from Post
 

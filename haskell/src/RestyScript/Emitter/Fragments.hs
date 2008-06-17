@@ -1,35 +1,40 @@
 {-# OPTIONS_GHC -XOverloadedStrings -funbox-strict-fields #-}
 
-module RestyView.Emitter.Fragments (
-    Fragment,
-    VarType,
-    emit,
-    emitJSON
+module RestyScript.Emitter.Fragments (
+    Fragment, VarType, emit, emitJSON
 ) where
 
-import RestyView.Util
-import RestyView.AST
+import RestyScript.Util
+import RestyScript.AST
 
 import Data.List (intersperse)
 import Text.Printf (printf)
 import Text.JSON
 import qualified Data.ByteString.Char8 as B
 
-data VarType = VTLiteral | VTSymbol | VTUnknown
-    deriving (Ord, Eq, Show)
+data VarType = VTLiteral | VTSymbol | VTUnknown | VTQuoted
 
 instance JSON VarType where
     showJSON VTSymbol = showJSON ("symbol"::String)
     showJSON VTLiteral = showJSON ("literal"::String)
     showJSON VTUnknown = showJSON ("unknown"::String)
+    showJSON VTQuoted = showJSON ("quoted"::String)
     readJSON = undefined
 
-data Fragment = FVariable !String !VarType | FString !B.ByteString
-    deriving (Ord, Eq, Show)
+data Fragment = FVariable !String !VarType
+              | FString !B.ByteString
+              | FSql ![Fragment]
+              | FHttpCmd !String ![Fragment] ![Fragment]
+              | FNull
 
 instance JSON Fragment where
-    showJSON (FString s) = showJSON $ B.unpack s
-    showJSON (FVariable v t) = JSArray [showJSON v, showJSON t]
+    showJSON val = case val of
+        FString s -> showJSON $ B.unpack s
+        FVariable v t -> JSArray [showJSON v, showJSON t]
+        FHttpCmd meth url [FNull] -> JSArray [showJSON meth, showJSON url]
+        FHttpCmd meth url content -> JSArray [showJSON meth, showJSON url, showJSON content]
+        FSql frags -> JSArray [JSArray $ map showJSON frags]
+        FNull -> showJSON (""::String)
     readJSON = undefined
 
 bs :: String -> B.ByteString
@@ -38,7 +43,7 @@ bs = B.pack
 (~~) = B.append
 (<+>) = merge
 
-emit :: SqlVal -> [Fragment]
+emit :: RSVal -> [Fragment]
 emit node =
     case node of
         TypeCast (Variable _ v1) (Variable _ v2) -> [FVariable v1 VTUnknown, FString $ "::", FVariable v2 VTSymbol]
@@ -95,9 +100,48 @@ emit node =
         Minus val -> str "(-" <+> emit val <+> str ")"
         Plus val -> emit val
         Not val -> str "(not " <+> emit val <+> str ")"
-        Null -> str ""
-    where str s = [FString s]
-          emitForList ls = join ", " $ map emit ls
+        Empty -> str ""
+        Null -> str "null"
+        Action cmds -> map p cmds
+            where p :: RSVal -> Fragment
+                  p x = case x of
+                    HttpCmd meth url Empty -> FHttpCmd meth (emitLit url) [FNull]
+                    HttpCmd meth url content -> FHttpCmd meth (emitLit url) (emitForJSON True content)
+
+                    otherwise -> FSql $ emit x
+        Delete model cond -> str "delete from " <+> emit model <+> str " " <+> emit cond
+        Update model assign cond -> str "update " <+> emit model <+> str " set " <+> emit assign <+> str " " <+> emit cond
+        Assign col expr -> emit col <+> str " = " <+> emit expr
+        Distinct ls -> str "distinct " <+> emitForList ls
+        All ls -> str "all " <+> emitForList ls
+        Pair k v -> str "\"" <+> emitLit k <+> str "\": " <+> emitForJSON True v
+        Object ps -> str "{" <+> (join ", " $ map emit ps) <+> str "}"
+        Array xs -> str "[" <+> (join ", " $ map (emitForJSON True) xs) <+> str "]"
+        Concat a b -> emitLit a <+> emitLit b
+        RSTrue -> str "true"
+        RSFalse -> str "false"
+        HttpCmd _ _ _ -> []  -- this shouldn't happen
+
+    where emitForList ls = join ", " $ map emit ls
+
+str :: B.ByteString -> [Fragment]
+str s = [FString s]
+
+emitForJSON :: Bool -> RSVal -> [Fragment]
+emitForJSON toplevel n = case n of
+    Variable _ v -> [FVariable v t]
+        where t = if toplevel then VTLiteral else VTQuoted
+    String s -> if toplevel then [FString $ bs $ quoteIdent s] else str $ bs s
+    Concat a b -> if toplevel
+                    then str "\"" <+> emitForJSON False a <+> emitForJSON False b <+> str "\""
+                    else emitLit a <+> emitLit b
+    otherwise -> emitLit n
+
+emitLit :: RSVal -> [Fragment]
+emitLit node = case node of
+    Variable _ v -> [FVariable v VTQuoted]
+    String s -> [FString $ bs s]
+    otherwise -> emit node
 
 merge :: [Fragment] -> [Fragment] -> [Fragment]
 merge [] b = b
@@ -110,6 +154,6 @@ join :: String -> [[Fragment]] -> [Fragment]
 join sep [] = []
 join sep lst = foldl1 merge $ intersperse [FString $ bs sep] lst
 
-emitJSON :: SqlVal -> String
+emitJSON :: RSVal -> String
 emitJSON = encode . emit
 

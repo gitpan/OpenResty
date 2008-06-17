@@ -85,3 +85,21 @@ POST /=/model/varcharTest
 --- response
 {"success":1}
 
+
+
+=== TEST 8: Create a model with tsquery types
+XXX FIX ME
+I have to skip this test since it cannot pass on Pg instances without
+tsearch2 installed.
+--- request
+POST /=/model/tsqueryTest
+{
+    "description": "Type testing",
+    "columns": [
+        { "name": "title", "type": "tsquery", "label": "Test for tsquery type" }
+    ]
+}
+--- response
+{"success":1}
+--- SKIP
+

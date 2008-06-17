@@ -1,12 +1,14 @@
 package OpenResty::Handler::Action;
 
-#use Smart::Comments;
+#use Smart::Comments '####';
 use strict;
 use warnings;
 
 use OpenResty::Util;
 use Params::Util qw( _HASH _STRING );
-use OpenResty::RestyScript::View;
+use OpenResty::RestyScript;
+use OpenResty::Limits;
+use Data::Dumper qw(Dumper);
 
 sub POST_action_exec {
     my ($self, $openresty, $bits) = @_;
@@ -14,53 +16,140 @@ sub POST_action_exec {
     my $params = {
         $bits->[2] => $bits->[3]
     };
-    my $lang = $params->{lang};
-    if (!defined $lang) {
-        die "The 'lang' param is required in the Select action.\n";
-    }
-    if (lc($lang) ne 'minisql') {
-        die "Only the miniSQL language is supported for Select.\n";
-    }
-    my $sql = $openresty->{_req_data};
-    ### Action sql: $sql
 
-    _STRING($sql) or
-        die "miniSQL must be an non-empty literal string: ", $OpenResty::Dumper->($sql), "\n";
-   #warn "SQL 1: $sql\n";
-    my $select = OpenResty::RestyScript::View->new;
-    my $res = $select->parse(
-        $sql,
-        {
-            quote => \&Q, quote_ident => \&QI,
-            limit => $openresty->{_limit}, offset => $openresty->{_offset}
-        }
-    );
-    if (_HASH($res)) {
-        my $sql = $res->{sql};
-        $sql = $self->append_limit_offset($openresty, $sql, $res);
-        my @models = @{ $res->{models} };
-        my @cols = @{ $res->{columns} };
-        $self->validate_model_names($openresty, \@models);
-        $self->validate_col_names($openresty, \@models, \@cols);
-       #warn "SQL 2: $sql\n";
-        $openresty->select("$sql", {use_hash => 1, read_only => 1});
+    my $meth = "exec_$action";
+    if ($self->can($meth)) {
+        return $self->$meth($openresty);
     }
+
+    die "Action not found: $action\n";
 }
 
-sub append_limit_offset {
-    my ($self, $openresty, $sql, $res) = @_;
-    #my $order_by $cgi->url
-    my $limit = $res->{limit};
-    if (defined $limit) {
-        $sql =~ s/;\s*$/ limit $limit/s or
-            $sql .= " limit $limit";
+sub exec_RunView {
+    my ($self, $openresty) = @_;
+
+    my $sql = $openresty->{_req_data};
+    ### Action sql: $sql
+    if (length $sql > $VIEW_MAX_LEN) { # more than 10 KB
+        die "SQL input too large (must be under 5 KB)\n";
     }
-    my $offset = $res->{offset};
-    if (defined $offset) {
-        $sql =~ s/;\s*$/ offset $offset;/s or
-            $sql .= " offset $offset";
+
+    _STRING($sql) or
+        die "Restyscript source must be an non-empty literal string: ", $OpenResty::Dumper->($sql), "\n";
+   #warn "SQL 1: $sql\n";
+
+    my $view = OpenResty::RestyScript->new('view', $sql);
+    my ($frags, $stats) = $view->compile;
+    ### $frags
+    ### $stats
+    if (!$frags && !$stats) { die "Failed to invoke RunView\n" }
+
+    # Check if variables are used:
+    for my $frag (@$frags) {
+        if (ref $frag) {
+            die "Variables not allowed in the input to RunView: $frag->[0]\n";
+        }
     }
-    return "$sql;\n";
+
+    my @models = @{ $stats->{modelList} };
+    $self->validate_model_names($openresty, \@models);
+    my $pg_sql = $frags->[0];
+
+    $openresty->select($pg_sql, {use_hash => 1, read_only => 1});
+}
+
+sub exec_RunAction {
+    my ($self, $openresty) = @_;
+
+    my $sql = $openresty->{_req_data};
+    ### Action sql: $sql
+    if (length $sql > $ACTION_MAX_LEN) { # more than 10 KB
+        die "SQL input too large (must be under 5 KB)\n";
+    }
+
+    _STRING($sql) or
+        die "Restyscript source must be an non-empty literal string: ", $OpenResty::Dumper->($sql), "\n";
+   #warn "SQL 1: $sql\n";
+
+    my $view = OpenResty::RestyScript->new('action', $sql);
+    my ($frags, $stats) = $view->compile;
+    ### $frags
+    ### $stats
+    if (!$frags && !$stats) { die "Failed to invoke RunAction\n" }
+
+    # Check if too many commands are given:
+    my $cmds = $frags;
+    if (@$cmds > $ACTION_CMD_COUNT_LIMIT) {
+        die "Too many commands in the action (should be no more than $ACTION_CMD_COUNT_LIMIT)\n";
+    }
+
+    my @final_cmds;
+    for my $cmd (@$cmds) {
+        die "Invalid command: ", Dumper($cmd), "\n" unless ref $cmd;
+        if (@$cmd == 1 and ref $cmd->[0]) {   # being a SQL command
+            my $cmd = $cmd->[0];
+            # Check for variable uses:
+            for my $frag (@$cmd) {
+                if (ref $frag) {  # being a variable
+                    die "Variable not allowed in the input to RunAction: $frag->[0]\n";
+                }
+            }
+            #### SQL: $cmd->[0]
+            push @final_cmds, $cmd->[0];
+        } else { # being an HTTP command
+            my ($http_meth, $url, $content) = @$cmd;
+            if ($http_meth ne 'POST' and $http_meth ne 'PUT' and $content) {
+                die "Content part not allowed for $http_meth\n";
+            }
+            my @bits = $http_meth;
+
+            # Check for variable uses in $url:
+            for my $frag (@$url) {
+                if (ref $frag) { # being a variable
+                    die "Variable not allowed in the input to RunAction: $frag->[0]\n";
+                }
+            }
+            push @bits, $url->[0];
+
+            # Check for variable uses in $url:
+            for my $frag (@$url) {
+                if (ref $frag) { # being a variable
+                    die "Variable not allowed in the input to RunAction: $frag->[0]\n";
+                }
+            }
+
+            push @bits, $content->[0] if @$content;
+            push @final_cmds, \@bits;
+        }
+    }
+
+    my @models = @{ $stats->{modelList} };
+    $self->validate_model_names($openresty, \@models);
+
+    my @outputs;
+    my $i = 0;
+    for my $cmd (@final_cmds) {
+        $i++;
+        if (ref $cmd) { # being an HTTP method
+            my ($http_meth, $url, $content) = @$cmd;
+            if ($url !~ m{^/=/}) {
+                die "Error in command $i: url does not start by \"/=/\"\n";
+            }
+            die "HTTP commands not implemented yet.\n";
+        } else {
+            my $pg_sql = $cmd;
+            if (substr($pg_sql, 0, 6) eq 'select') {
+                my $res = $openresty->select($pg_sql, {use_hash => 1, read_only => 1});
+                push @outputs, $res;
+            } else {
+                # XXX FIXME
+                # we should use anonymous roles here in the future:
+                my $retval = $openresty->do($pg_sql);
+                push @outputs, {success => 1,rows_affected => $retval+0};
+            }
+        }
+    }
+    return \@outputs;
 }
 
 sub validate_model_names {
@@ -71,11 +160,6 @@ sub validate_model_names {
             die "Model \"$model\" not found.\n";
         }
     }
-}
-
-sub validate_col_names {
-    my ($self, $openresty, $models, $cols) = @_;
-    # XXX TODO...
 }
 
 1;
