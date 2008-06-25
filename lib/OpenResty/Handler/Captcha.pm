@@ -10,7 +10,7 @@ use MIME::Base64;
 use Digest::MD5 qw/md5/;
 use Encode qw( encode decode is_utf8 );
 
-my $PLAINTEXT_SEP="\001";	# separator character in plaintext str
+my $PLAINTEXT_SEP=":";	# separator character in plaintext str
 my $MIN_TIMESPAN=1;			# minimum timespan(sec) for a valid Captcha,
 							# verification will fail before this timespan.
 							# default to 3s.
@@ -387,12 +387,14 @@ sub validate_captcha
 
 	# Construct cache key for captcha id. We cannot use captcha id directly, for the id itself
 	# could be appending any characters without affecting its decryption.
-	# Prepending "captcha:" to prevent cache key confliction...
-	my $cache_key=join($PLAINTEXT_SEP,"captcha:",$rand1,$lang,$solution,$min_valid,$max_valid,$rand2);
+	# Prepending "captcha" to prevent cache key confliction...
+	# NOTE: the solution used here should not contains whitespaces, because it will be used as
+	# part of the cache key!
+	my $cache_key=join($PLAINTEXT_SEP,"captcha",$rand1,$lang,trim_sol($solution),$min_valid,$max_valid,$rand2);
 	utf8::encode($cache_key);
 
 	# validate failed if the captcha id has been used
-	my $used=$OpenResty::Cache->get($cache_key);
+	my $used = $OpenResty::Cache->get($cache_key);
 	return (0,"The captcha has been used.") if $used;	# ans used
 
 	# validate failed if user input doesn't match the solution in captcha id
@@ -401,7 +403,8 @@ sub validate_captcha
 	return (0,"Solution to the captcha is incorrect.") if trim_sol($word) ne trim_sol($solution);	# wrong ans
 
 	# validate succeed, remember which captcha id has been used
-	$OpenResty::Cache->set($cache_key=>1, $MAX_TIMESPAN);
+        #warn $cache_key, "\n";
+	$OpenResty::Cache->set($cache_key => 1, $MAX_TIMESPAN);
 
 	return (1,"Verification succeeded.");
 }

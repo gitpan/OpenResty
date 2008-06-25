@@ -24,7 +24,7 @@ use OpenResty::RestyScript;
 
 #plan tests => 3 * blocks();
 
-plan tests => 117;
+plan tests => 118;
 
 sub quote {
     my $s = shift;
@@ -705,7 +705,14 @@ keyword='Hello'
 
 
 
-=== TEST 60: for distinct
+=== TEST 60: for >>= operator
+--- sql
+select * from table where iprange >>= '202.165.100.1'
+--- out: select * from "table" where "iprange" >>= '202.165.100.1'
+
+
+
+=== TEST 61: for distinct
 --- sql
 select distinct ca, cb from table where ca > 0
 --- out: select distinct "ca", "cb" from "table" where "ca" > 0

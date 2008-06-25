@@ -8,6 +8,7 @@ use Cookie::XS;
 use OpenResty::Limits;
 use OpenResty::Cache;
 use OpenResty;
+use OpenResty::Inlined;
 use OpenResty::Config;
 
 our $InitFatal;
@@ -71,7 +72,13 @@ sub init {
 }
 
 sub process_request {
-    my ($class, $cgi) = @_;
+    my ($class, $cgi, $call_level, $parent_account) = @_;
+
+    $call_level ||= 0;
+    if ($call_level > $ACTION_REC_DEPTH_LIMIT) {
+        die "Action calling chain is too deep. (The limit is $ACTION_REC_DEPTH_LIMIT.)\n";
+    }
+
     my $url  = $ENV{REQUEST_URI};
     ### $url
     $url =~ s/\?.*//g;
@@ -82,20 +89,24 @@ sub process_request {
 
     $url =~ s{^\Q$url_prefix\E/+}{}g if $url_prefix;    ### New URL: $url
 
-    my $openresty = OpenResty->new($cgi);
-    #warn "InitFatal2: $InitFatal\n";
-    if ($InitFatal) {
-        $openresty->fatal($InitFatal);
-        return;
+    my $openresty;
+    if ($call_level == 0) {
+        $openresty = OpenResty->new($cgi, $call_level);
+    } else {
+        $openresty = OpenResty::Inlined->new($cgi, $call_level);
     }
 
+    #warn "InitFatal2: $InitFatal\n";
     eval {
         $openresty->init(\$url);
     };
     if ($@) {
         ### Exception in new: $@
-        $openresty->fatal($@);
-        return;
+        return $openresty->fatal($@);
+    }
+
+    if ($InitFatal) {
+        return $openresty->fatal($InitFatal);
     }
 
     #$url =~ s/\/+$//g;
@@ -107,8 +118,7 @@ sub process_request {
 
     if (!@bits) {
         ### Unknown URL: $url
-        $openresty->fatal("Unknown URL: $url");
-        return;
+        return $openresty->fatal("Unknown URL: $url");
     }
 
     map { s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg; } @bits;
@@ -116,8 +126,7 @@ sub process_request {
 
     my $fst = shift @bits;
     if ($fst ne '=') {
-        $openresty->fatal("URLs must be led by '=': $url");
-        return;
+        return $openresty->fatal("URLs must be led by '=': $url");
     }
 
     my $key = $bits[0];
@@ -125,11 +134,10 @@ sub process_request {
 
     my $http_meth = $openresty->{'_http_method'};
     if (!$http_meth) {
-        $openresty->fatal("HTTP method not detected.");
-        return;
+        return $openresty->fatal("HTTP method not detected.");
     }
     ### $http_meth
-    if ($OpenResty::Config{'frontend.log'}) {
+    if ($call_level == 0 && $OpenResty::Config{'frontend.log'}) {
         require Clone;
         #warn "------------------------------------------------\n";
         warn "$http_meth $ENV{REQUEST_URI} (", join("/", @bits), ")\n";
@@ -140,14 +148,15 @@ sub process_request {
     }
 
     # XXX hacks...
-    my $cookies = Cookie::XS->fetch;
-    my $session_from_cookie;
-    my $session;
-    if ($cookies) {
-        my $cookie = $cookies->{session};
-        if ($cookie) {
-            $openresty->{_session_from_cookie} =
-                $session_from_cookie = $cookie->[-1];
+    my ($session, $session_from_cookie);
+    if ($call_level == 0) { # only check cookies on the toplevel call
+        my $cookies = Cookie::XS->fetch;
+        if ($cookies) {
+            my $cookie = $cookies->{session};
+            if ($cookie) {
+                $openresty->{_session_from_cookie} =
+                    $session_from_cookie = $cookie->[-1];
+            }
         }
     }
 
@@ -175,8 +184,7 @@ sub process_request {
             $OpenResty::Cache->remove($session);
         }
         $openresty->{_bin_data} = "{\"success\":1}\n";
-        $openresty->response;
-        return;
+        return $openresty->response;
     }
 
     my ($account, $role);
@@ -210,13 +218,24 @@ sub process_request {
                 }
             }
 
-            # this part is lame?
-            if (!$account) {
-                die "Login required.\n";
-            }
-            if (!$openresty->has_user($account)) {
-                ### Found user: $user
-                die "Account \"$account\" does not exist.\n";
+            if ($call_level == 0) {
+                # this part is lame?
+                if (!$account) {
+                    die "Login required.\n";
+                }
+                if (!$openresty->has_user($account)) {
+                    ### Found user: $user
+                    die "Account \"$account\" does not exist.\n";
+                }
+            } else {
+                if (!$account) {
+                    $account = $parent_account;
+                } else {
+                    if (!$openresty->has_user($account)) {
+                        ### Found user: $user
+                        die "Account \"$account\" does not exist.\n";
+                    }
+                }
             }
             $openresty->set_user($account);
 
@@ -228,8 +247,7 @@ sub process_request {
             $openresty->set_role($role);
         };
         if ($@) {
-            $openresty->fatal($@);
-            return;
+            return $openresty->fatal($@);
         }
     }
 
@@ -238,8 +256,7 @@ sub process_request {
         if ($key !~ /^(?:login|logout|captcha|version)$/) {
             my $res = $openresty->current_user_can($http_meth => \@bits);
             if (!$res) {
-                $openresty->fatal("Permission denied for the \"$role\" role.");
-                return;
+                return $openresty->fatal("Permission denied for the \"$role\" role.");
             }
         }
     }
@@ -249,21 +266,18 @@ sub process_request {
         my $object = $category->[$#bits];
         ### $object
         if (!defined $object) {
-            $openresty->fatal("Unknown URL level: $url");
-            return;
+            return $openresty->fatal("Unknown URL level: $url");
         }
         my $package = 'OpenResty::Handler::' . ucfirst($key);
         eval "use $package";
         if ($@) {
-            $openresty->fatal("Failed to load $package");
-            return;
+            return $openresty->fatal("Failed to load $package");
         }
         my $meth = $http_meth . '_' . $object;
         $meth =~ s/\./_/g;
         if (!$package->can($meth)) {
             $object =~ s/_/ /g;
-            $openresty->fatal("HTTP $http_meth method not supported for $object.");
-            return;
+            return $openresty->fatal("HTTP $http_meth method not supported for $object.");
         }
         my $data;
         eval {
@@ -274,8 +288,7 @@ sub process_request {
             $data = $package->$meth($openresty, \@bits);
         };
         if ($@) {
-            $openresty->fatal($@);
-            return;
+            return $openresty->fatal($@);
         }
         $openresty->data($data);
         $openresty->response();

@@ -12,10 +12,11 @@ test: all
 
 clean:
 	-rm bin/restyscript
-	-find -name '*.o' -delete
-	-find -name '*.hi' -delete
-	-find -name '*.ho' -delete
+	-rm `find -name '*.o'` `find -name '*.hi'` `find -name '*.ho'`
 
 optimized: OOPTS = -O2
 optimized: all
+
+optimized2: OOPTS = -O2 -fvia-c -optc-O3 #-fdicts-cheap -fno-method-sharing -fmax-simplifier-iterations10 -fliberate-case-threshold100
+optimized2: all
 

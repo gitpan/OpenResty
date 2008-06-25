@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003005';
+our $VERSION = '0.003006';
 
 use strict;
 use warnings;
@@ -100,8 +100,16 @@ sub parse_data {
 }
 
 sub new {
-    my ($class, $cgi) = @_;
-    return bless { _cgi => $cgi, _charset => 'UTF-8' }, $class;
+    my ($class, $cgi, $call_level) = @_;
+    return bless {
+        _cgi => $cgi,
+        _charset => 'UTF-8',
+        _call_level => $call_level,
+    }, $class;
+}
+
+sub call_level {
+    return $_[0]->{_call_level};
 }
 
 sub init {
@@ -277,10 +285,19 @@ sub fatal {
 
 sub error {
     my ($self, $s) = @_;
-    if (!$OpenResty::Config{'frontend.debug'} && $s =~ /^DBD::Pg::(?:db|st) \w+ failed:/) {
-        $s = 'Operation failed.';
+    my $lowlevel = ($s =~ s/^DBD::Pg::(?:db|st) \w+ failed:\s*//);
+    #warn $s, "\n";
+    if ($s =~ s{^\s*ERROR:\s+PL/Proxy function \w+.\w+\(\d+\): remote error:\s*}{}) {
+        $s =~ s/\s+CONTEXT:  .*//s;
     }
-    $s =~ s/(.+) at \S+\/OpenResty\.pm line \d+(?:, <DATA> line \d+)?\./Syntax error found in the JSON input: $1./;
+    $s =~ s/^ERROR:\s*//g;
+    if (!$OpenResty::Config{'frontend.debug'} && $lowlevel) {
+        $s = 'Operation failed.';
+    } else {
+        $s =~ s/(.+) at \S+\/OpenResty\.pm line \d+(?:, <DATA> line \d+)?\.?$/Syntax error found in the JSON input: $1./;
+        $s =~ s{ at \S+ line \d+\.?$}{}g;
+        $s =~ s{ at \S+ line \d+, <\w+> line \d+\.?$}{}g;
+    }
     #$s =~ s/^DBD::Pg::db do failed:\s.*?ERROR:\s+//;
     $self->{_error} .= $s . "\n";
 
@@ -357,7 +374,7 @@ sub response {
     }
     $str =~ s/\n+$//s;
 
-    my $meth = $self->{_http_method};
+    #my $meth = $self->{_http_method};
     my $last_res_id = $cgi->url_param('last_response');
     ### $last_res_id;
     ### $meth;
@@ -552,7 +569,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.5 released on June 17, 2008.
+This document describes OpenResty 0.3.6 released on June 25, 2008.
 
 =head1 DESCRIPTION
 
@@ -832,5 +849,5 @@ A copy of this license can be obtained from
 
 L<http://opensource.org/licenses/artistic-license-2.0.php>
 
-THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS "AS IS' AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES. THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT PERMITTED BY YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES. THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT PERMITTED BY YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 

@@ -118,7 +118,7 @@ sub exec_RunAction {
                 }
             }
 
-            push @bits, $content->[0] if @$content;
+            push @bits, $content->[0] if $content && @$content;
             push @final_cmds, \@bits;
         }
     }
@@ -135,7 +135,16 @@ sub exec_RunAction {
             if ($url !~ m{^/=/}) {
                 die "Error in command $i: url does not start by \"/=/\"\n";
             }
-            die "HTTP commands not implemented yet.\n";
+            #die "HTTP commands not implemented yet.\n";
+            local %ENV;
+            $ENV{REQUEST_URI} = $url;
+            $ENV{REQUEST_METHOD} = $http_meth;
+            my $cgi = new_mocked_cgi($url, $content);
+            my $call_level = $openresty->call_level;
+            $call_level++;
+            my $account = $openresty->current_user;
+            my $res = OpenResty::Dispatcher->process_request($cgi, $call_level, $account);
+            push @outputs, $res;
         } else {
             my $pg_sql = $cmd;
             if (substr($pg_sql, 0, 6) eq 'select') {

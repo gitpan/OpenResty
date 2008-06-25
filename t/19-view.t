@@ -21,7 +21,6 @@ DELETE /=/model?user=$TestAccount&password=$TestPass&use_cookie=1
 DELETE /=/view
 --- response
 {"success":1}
---- LAST
 
 
 
@@ -732,10 +731,78 @@ GET /=/view/Foo/~/~?val=2&col=id
 
 
 
-=== TEST 79: bug
+=== TEST 79: Create a model with cidr type
+--- request
+POST /=/model/T
+{
+    "description": "Type testing",
+    "columns":[
+        { "name": "cidr", "type": "cidr", "label": "cidr" }
+    ]
+}
+--- response
+{"success":1}
+
+
+
+=== TEST 80: Insert lines to cidr table
+--- request
+POST /=/model/T/~/~
+[
+    {"cidr":"202.165.100.143"}
+]
+--- response
+{"last_row":"/=/model/T/id/1","rows_affected":1,"success":1}
+
+
+
+=== TEST 81: create a view with operator >>=
+--- request
+POST /=/view/TC
+{ "definition": "select count(*) from T where cidr >>= '202.165.100.243'" }
+--- response
+{"success":1}
+
+
+
+=== TEST 82: bug
 --- request
 POST /=/view/RowCount
 { "definition": "select count(*) from $model" }
 --- response
 {"success":1}
+
+
+
+=== TEST 83: view the TitleOnly view
+--- request
+GET /=/view/TitleOnly
+--- response
+{"name":"TitleOnly","description":null,"definition":"select $select_col from A order by $order_by"}
+
+
+
+=== TEST 84: change the view def
+--- request
+PUT /=/view/TitleOnly
+{ "definition": "select 32" }
+--- response
+{"success":1}
+
+
+
+=== TEST 85: get the view def again:
+--- request
+GET /=/view/TitleOnly
+--- response
+{"name":"TitleOnly","description":null,"definition":"select 32"}
+
+
+
+=== TEST 86: change the view def (syntax error)
+--- request
+PUT /=/view/TitleOnly
+{ "definition": "abc 32" }
+--- response
+{"error":"minisql: line 1: error: Unexpected input: \"abc\" ('(' or select expected).","success":0}
 
