@@ -1,6 +1,9 @@
 [% DEFAULT
     cat = 'model'  # category
 -%]
+// !!! DO NOT EDIT !!!
+// This .js file was generated automatically from handlers.tt
+
 function get[% cat | ucfirst %]s (opts) {
     setStatus(true, 'get[% cat | ucfirst %]');
     openresty.callback = render[% cat | ucfirst %]s;
@@ -59,6 +62,17 @@ function render[% cat | ucfirst %] (res, name) {
         //error("[% cat %]-" + name + " not found!");
         get[% cat | ucfirst %]Menu();
     }
+  [%- IF cat == 'model' %]
+    var columns = res.columns;
+    for (var i = 0; i < columns.length; i++) {
+        var col = columns[i];
+        if (!col) next;
+        var default_val = col["default"];
+        if (default_val != null) {
+            col["default"] = JSON.stringify(default_val);
+        }
+    }
+  [%- END %]
     $("#main").html(
         Jemplate.process(
             '[% cat %].tt',

@@ -3,7 +3,8 @@ package OpenResty::Backend::PgMocked;
 use strict;
 use warnings;
 
-#use Smart::Comments '####';
+#use Smart::Comments '#####';
+use Clone qw(clone);
 use JSON::XS;
 use base 'OpenResty::Backend::Pg';
 use Test::LongString;
@@ -26,9 +27,13 @@ sub LoadFile {
     my ($file) = @_;
     open my $in, $file or
         die "Can't open $file for reading: $!";
-    my $json = do { local $/; <$in> };
+    my @res;
+    while (<$in>) {
+        chomp;
+        push @res, $json_xs->decode($_);
+    }
     close $in;
-    $json_xs->decode($json);
+    return \@res;
 }
 
 sub ping { 1; }
@@ -39,9 +44,11 @@ sub DumpFile {
         die "Can't open $file for writing: $!";
 
     #### $data
-    my $json = $json_xs->encode($data);
+    for my $elem (@$data) {
+        my $json = $json_xs->encode($elem);
     #print $out encode('utf8', $json);
-    print $out $json;
+        print $out $json, "\n";
+    }
     close $out;
 }
 
@@ -67,10 +74,12 @@ sub record {
         #warn "RES: $res\n";
         $type = 'die';
     }
-    push @$TransList, ["$query", $res, $type];
+    ##### $res
+    push @$TransList, ["$query", clone($res), $type];
 }
 
 sub stop_recording_file {
+    ##### Last: $Data->[-1]
     DumpFile($DataFile, $Data);
     undef $Data;
 }

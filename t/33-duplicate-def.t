@@ -8,8 +8,7 @@ run_tests;
 
 __DATA__
 
-=== TEST 1: UTF-8
---- charset: UTF-8
+=== TEST 1: Delete existing models
 --- request
 DELETE /=/model?user=$TestAccount&password=$TestPass&use_cookie=1
 --- response
@@ -17,26 +16,27 @@ DELETE /=/model?user=$TestAccount&password=$TestPass&use_cookie=1
 
 
 
-=== TEST 2: It hangs or report error
+=== TEST 2: Delete existing views
 --- request
-GET /=/model/Foo/~/~
+DELETE /=/view
 --- response
-{"success":0,"error":"Model \"Foo\" not found."}
+{"success":1}
 
 
 
-=== TEST 3: It hangs or report error
+=== TEST 3: Create a view
 --- request
-GET /blah
+POST /=/view/Toy
+{"definition":"select 12"}
 --- response
-{"success":0,"error":"URLs must be led by '='."}
---- SKIP
+{"success":1}
 
 
 
-=== TEST 4: logout
+=== TEST 4: Create an identical view but with a different name
 --- request
-GET /=/logout
+POST /=/view/Toy2
+{"definition":"select 12"}
 --- response
 {"success":1}
 

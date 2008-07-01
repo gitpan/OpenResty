@@ -57,7 +57,7 @@ function plantEditableHook (node, settings) {
         var data = {};
         if (isJSON) {
             var res = JSON.parse(value);
-            if (res == false && value != false) {
+            if (res == false && typeof res == typeof false && value != false) {
                 error("Invalid JSON value: " + value);
                 return html2text(value);
             }
@@ -499,11 +499,54 @@ function afterCreateView (res) {
     }
 }
 
+function createFeed () {
+    var name = $("#create-feed-name").val();
+    var desc = $("#create-feed-desc").val();
+    var author = $("#create-feed-author").val();
+    var link = $("#create-feed-link").val();
+    var logo = $("#create-feed-logo").val();
+    var lang = $("#create-feed-lang").val();
+    var copyright = $("#create-feed-copyright").val();
+    var view = $("#create-feed-view").val();
+    var title = $("#create-feed-title").val();
+    if (!view) {
+        error("The driving view cannot be empty.");
+        return false;
+    }
+    setStatus(true, "createFeed");
+    openresty.callback = afterCreateFeed;
+    openresty.postByGet(
+        '/=/feed/~',
+        { name: name,
+          description: desc,
+          author: author,
+          title: title,
+          link: link,
+          logo: logo,
+          language: lang,
+          copyright: copyright,
+          view: view
+        }
+    );
+    return false;
+}
+
+function afterCreateFeed (res) {
+    setStatus(false, "createFeed");
+    if (!openresty.isSuccess(res)) {
+        error("Failed to create feed: " + res.error);
+    } else {
+        gotoNextPage('feeds');
+    }
+}
+
 function createRole () {
     var name = $("#create-role-name").val();
     var desc = $("#create-role-desc").val();
     var login_by = $("#create-role-login").val();
     var password = $("#create-role-password").val();
+    if (password != null)
+        password = hex_md5(password);
     setStatus(true, "createRole");
     openresty.callback = afterCreateRole;
     openresty.postByGet(

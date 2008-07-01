@@ -255,14 +255,14 @@ GET /=/view/View2
 GET /=/view
 --- response
 [
-{"src":"/=/view/View",
- "name":"View",
- "description":null
-},
-{"src":"/=/view/View2",
- "name":"View2",
- "description":null
-}
+    {"src":"/=/view/View",
+     "name":"View",
+     "description":null
+    },
+    {"src":"/=/view/View2",
+     "name":"View2",
+     "description":null
+     }
 ]
 
 
@@ -805,4 +805,12 @@ PUT /=/view/TitleOnly
 { "definition": "abc 32" }
 --- response
 {"error":"minisql: line 1: error: Unexpected input: \"abc\" ('(' or select expected).","success":0}
+
+
+
+=== TEST 87: logout
+--- request
+GET /=/logout
+--- response
+{"success":1}
 

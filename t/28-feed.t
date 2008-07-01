@@ -198,14 +198,15 @@ GET /=/feed
 GET /=/feed/Post
 --- response
 {
-    "name": "Post",
-    "description": "Feed for blog posts",
-    "author": "agentzh",
-    "link": "http://blog.agentzh.org",
-    "copyright": "Copyright 2008 by Agent Zhang",
-    "language": "en",
-    "title": "Human & Machine - Blog posts",
-    "view": "PostFeed"
+    "name":"Post",
+    "description":"Feed for blog posts",
+    "author":"agentzh",
+    "link":"http://blog.agentzh.org",
+    "copyright":"Copyright 2008 by Agent Zhang",
+    "language":"en",
+    "logo":"http://localhost/Blog/out/me.jpg",
+    "title":"Human & Machine - Blog posts",
+    "view":"PostFeed"
 }
 
 
@@ -351,15 +352,87 @@ GET /=/feed
 
 
 
-=== TEST 23: Delete feed Comment
+=== TEST 23: Update some slots of the Comment feed
 --- request
-DELETE /=/feed/Comment
+PUT /=/feed/Comment
+{"language":"cn", "title":"Comments"}
 --- response
 {"success":1}
 
 
 
-=== TEST 24: Get the feed list again
+=== TEST 24: check the Comment feed
+--- request
+GET /=/feed/Comment
+--- response
+{
+    "link":"http://blog.agentzh.org",
+    "language":"cn",
+    "copyright":"Copyright by the individual commment senders",
+    "name":"Comment",
+    "author":null,
+    "description":"Feed for blog comments",
+    "view":"PostFeed",
+    "logo":null,
+    "title":"Comments"
+}
+
+
+
+=== TEST 25: Update all the slots
+--- request
+PUT /=/feed/Comment
+{
+    "name": "Comment2",
+    "description": "Feed for blog comments2",
+    "link": "http://blog2.agentzh.org",
+    "copyright": "Copyright2 by the individual commment senders",
+    "language": "zh-CN",
+    "title": "Human & Machine2",
+    "view": "PostFeed",
+    "author":"agentzh",
+    "logo":"me.jpg"
+}
+--- response
+{"success":1}
+
+
+
+=== TEST 26: check the Comment2 feed
+--- request
+GET /=/feed/Comment2
+--- response
+{
+    "name": "Comment2",
+    "description": "Feed for blog comments2",
+    "link": "http://blog2.agentzh.org",
+    "copyright": "Copyright2 by the individual commment senders",
+    "language": "zh-CN",
+    "title": "Human & Machine2",
+    "view": "PostFeed",
+    "author":"agentzh",
+    "logo":"me.jpg"
+}
+
+
+
+=== TEST 27: Delete feed Comment
+--- request
+DELETE /=/feed/Comment
+--- response
+{"success":0,"error":"Feed \"Comment\" not found."}
+
+
+
+=== TEST 28: Delete feed Comment2
+--- request
+DELETE /=/feed/Comment2
+--- response
+{"success":1}
+
+
+
+=== TEST 29: Get the feed list again
 --- request
 GET /=/feed
 --- response
@@ -369,9 +442,17 @@ GET /=/feed
 
 
 
-=== TEST 25: Delete feed Comment again
+=== TEST 30: Delete feed Comment again
 --- request
 DELETE /=/feed/Comment
 --- response
 {"error":"Feed \"Comment\" not found.","success":0}
+
+
+
+=== TEST 31: logout
+--- request
+GET /=/logout
+--- response
+{"success":1}
 

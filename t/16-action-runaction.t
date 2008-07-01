@@ -100,7 +100,7 @@ select * from Carrie where title = 'hello carrie' and num=10;"
 
 
 
-=== TEST 9: use minisql through GET & .Select
+=== TEST 9: use minisql through GET & RunAction
 --- request
 GET /=/post/action/RunAction/~/~?var=foo&data="select * from Carrie where url = 'http://www.carriezh.cn/' and num=10"
 --- response
@@ -345,4 +345,12 @@ GET /=/model?user=$TestAccount&password=$TestPass
     {"src":"/=/model/Carrie","name":"Carrie","description":"我的书签"},
     {"src":"/=/model/Another","name":"Another","description":"a model in another account"}
 ]
+
+
+
+=== TEST 32: logout
+--- request
+GET /=/logout
+--- response
+{"success":1}
 

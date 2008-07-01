@@ -2,6 +2,7 @@
      js_files = [
         'JSON.js',
         'openresty.js',
+        'md5.js',
         'jquery.js',
         'jquery.jeditable.pack.js',
         'jquery.cookie.pack.js',
@@ -10,6 +11,7 @@
         'model.js',
         'view.js',
         'role.js',
+        'feed.js',
         'dispatcher.js',
         'admin.js',
     ]

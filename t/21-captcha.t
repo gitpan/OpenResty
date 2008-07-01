@@ -355,3 +355,10 @@ GET /=/model?user=$TestAccount.Poster&captcha=$SavedCapture:你好，世界啊�
 --- use_ttf: 1
 
 
+
+=== TEST 41: logout
+--- request
+GET /=/logout
+--- response
+{"success":1}
+
