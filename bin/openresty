@@ -10,6 +10,7 @@ use lib "$FindBin::Bin/../lib";
 use OpenResty::Dispatcher;
 use OpenResty::Limits;
 use Getopt::Std;
+use Time::HiRes;
 use Digest::MD5 'md5';
 
 my $cmd = lc(shift) || $ENV{OPENRESTY_COMMAND};
@@ -31,6 +32,11 @@ warn $@ if $@;
 if ($cmd eq 'fastcgi') {
     require OpenResty::FastCGI;
     while (my $cgi = new OpenResty::FastCGI) {
+        my $begin_time;
+        if (defined $OpenResty::Dispatcher::StatsLog) {
+            $begin_time = Time::HiRes::time;
+        }
+
         eval {
             OpenResty::Dispatcher->process_request($cgi);
         };
@@ -39,6 +45,23 @@ if ($cmd eq 'fastcgi') {
             print "HTTP/1.1 200 OK\n";
             # XXX don't show $@ to the end user...
             print qq[{"success":0,"error":"$@"}\n];
+        }
+        if (defined (my $stats_dir = $OpenResty::Dispatcher::StatsLog)) {
+            my $diff = Time::HiRes::time - $begin_time;
+            my $now = localtime;
+            my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
+            $year += 1900; $mon += 1;
+            #my $now = "$year-$mon-$mday $hour:$min:$sec";
+            #my ($sec, $min, $hour, $mday, $mon, $year) = localtime;
+            #$year += 1900; $mon += 1;
+            my $stats_file = sprintf("$stats_dir/%04d-%02d-%02d.log", $year, $mon, $mday);
+            open my $log, ">>$stats_file" or die "Can't open stats_log file $stats_file for writing: $!\n";
+            my $client = $ENV{REMOTE_ADDR};
+            my $meth = $ENV{REQUEST_METHOD};
+            my $url = $ENV{REQUEST_URI};
+            ### %ENV
+            print $log sprintf("[%04d-%02d-%02d %02d:%02d:%02d] %.03f %s \"%s %s\"\n", $year, $mon, $mday, $hour, $min, $sec, $diff, $client, $meth, $url);
+            close $log;
         }
     }
     exit;

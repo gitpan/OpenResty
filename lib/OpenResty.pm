@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003007';
+our $VERSION = '0.003008';
 
 use strict;
 use warnings;
@@ -414,20 +414,6 @@ sub emit_data {
     return eval { $Dumper->($data); }
 }
 
-sub has_role {
-    my ($self, $role) = @_;
-    return 1 if $role eq 'Admin' or $role eq 'Public'; # shortcut...
-    _IDENT($role) or
-        die "Bad role name: ", $OpenResty::Dumper->($role), "\n";
-    my $select = OpenResty::SQL::Select->new('id')
-        ->from('_roles')
-        ->where(name => Q($role))
-        ->limit(1);
-    my $ret;
-    eval { $ret = $self->select("$select",)->[0][0]; };
-    return $ret;
-}
-
 sub current_user_can {
     my ($self, $meth, $bits) = @_;
     my @urls = $bits;
@@ -460,6 +446,28 @@ sub has_feed {
         ->limit(1);
     my $ret;
     eval { $ret = $self->select("$select")->[0][0]; };
+    return $ret;
+}
+
+sub has_role {
+    my ($self, $role) = @_;
+    return 1 if $role eq 'Admin' or $role eq 'Public'; # shortcut...
+    _IDENT($role) or
+        die "Bad role name: ", $OpenResty::Dumper->($role), "\n";
+
+    my $user = $self->current_user;
+    if (my $login_meth = $Cache->get_has_role($user, $role)) {
+        #warn "has view cache HIT\n";
+        return $login_meth;
+    }
+
+    my $select = OpenResty::SQL::Select->new('login')
+        ->from('_roles')
+        ->where(name => Q($role))
+        ->limit(1);
+    my $ret;
+    eval { $ret = $self->select("$select")->[0][0]; };
+    if ($ret) { $Cache->set_has_role($user, $role, $ret) }
     return $ret;
 }
 
@@ -569,7 +577,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.7 released on July 1, 2008.
+This document describes OpenResty 0.3.8 released on July 9, 2008.
 
 =head1 DESCRIPTION
 

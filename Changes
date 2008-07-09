@@ -1,10 +1,21 @@
 Change Log for OpenResty
 
+0.3.8 Jul 9 2008
+* now we can update a col's default back to null and empty strings.
+* allowed type ltree in model columns.
+* added a new config option frontend.stats_log_dir.
+* now we cache has_role as well as the role's login method
+* added naive support for the unique key in column spec while creating models.
+* now we check unrecognized keys in column spec while creating models
+* added 34-unique.t and its pgmocked data
+* now "trivial" cache gets completely disabled in recording mode or pgmocked mode
+
 0.3.7 Jul 1 2008
 * Bumped the metamodel version number to 0.005.
 * Fixed the long standing bug regarding the model column default values saved in the metamodel.
 * Exposed the Feed API in the Admin site demo.
 * Now we use _rand in openresty.js for defeating web browser caching.
+* Now we allow multiple views with identical definitions.
 
 0.3.6 Jun 25 2008
 * Now we check the minisql's syntax when the user updates the view's definition.

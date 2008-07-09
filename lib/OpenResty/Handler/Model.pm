@@ -12,6 +12,9 @@ use OpenResty::Limits;
 use Clone 'clone';
 use Encode qw(is_utf8);
 
+#%OpenResty::AccountFiltered = %OpenResty::AccountFiltered;
+#$OpenResty::OpMap = $OpenResty::OpMap;
+
 sub check_type {
     my $type = shift;
     if ($type !~ m{^ \s*
@@ -31,6 +34,7 @@ sub check_type {
                     serial |
                     real |
                     double precision |
+                    ltree |
                     date |
                     (?:timestamp|time) (?: \s* \( \s* \d+ \s* \) )?
                         (?: \s* with(?:out)? \s+ time \s+ zone)? |
@@ -254,19 +258,38 @@ sub PUT_model_column {
         $update_meta->set(label => Q($label));
     }
 
-    my $default = delete $data->{default};
-    if (defined $default) {
-        my $json_default = $OpenResty::JsonXs->encode($default);
-        $default = $self->process_default($openresty, $default);
+    if (exists $data->{default}) {
+        my $default = delete $data->{default};
+        if (defined $default) {
+            #warn "DEFAULT: $default\n";
+            my $json_default = $OpenResty::JsonXs->encode($default);
+            $default = $self->process_default($openresty, $default);
 
-        $update_meta->set(QI('default') => Q($json_default));
-        $sql .= "alter table \"$table_name\" alter column \"$new_col\" set default ($default);\n",
+            $update_meta->set(QI('default') => Q($json_default));
+            $sql .= "alter table \"$table_name\" alter column \"$new_col\" set default ($default);\n",
+        } else {
+            $update_meta->set(QI('default') => Q("null"));
+            $sql .= "alter table \"$table_name\" alter column \"$new_col\" set default null;\n",
+        }
     }
 
     $update_meta->where(table_name => Q($table_name))
         ->where(name => Q($col));
 
+    # XXX TODO: add support for updating column's uniqueness
+    my $unique = delete $data->{unique};
+    if (defined $unique) {
+        die "Updating column's uniqueness is not implemented yet.\n";
+    }
+
+    if (%$data) {
+        my @key = sort(keys %$data);
+            die "Unrecognized keys in the content object: ",
+                join(", ", map { JSON::Syck::Dump($_) } @key), "\n";
+    }
+
     $sql .= $update_meta;
+    #warn "SQL:: $sql\n";
 
     my $res = $openresty->do($sql);
 
@@ -396,9 +419,9 @@ sub new_model {
     }
 
     if (%$data) {
-    my @key = sort(keys %$data);
-        die "Unrecognized keys in model schema 'TTT': ",
-            join(", ", map { JSON::Syck::Dump($_) } @key), "\n";
+        my @key = sort(keys %$data);
+            die "Unrecognized keys in model schema 'TTT': ",
+                join(", ", map { JSON::Syck::Dump($_) } @key), "\n";
     }
     my $i = 1;
     if ($openresty->has_model($model)) {
@@ -432,7 +455,7 @@ sub new_model {
         }
         # type defaults to 'text' if not specified.
         my $type = delete $col->{type} || 'text';
-        my $label = $col->{label} or
+        my $label = delete $col->{label} or
             die "No 'label' specified for column \"$name\" in model \"$model\".\n";
 
         my $default = delete $col->{default};
@@ -440,6 +463,7 @@ sub new_model {
         $sql .= ",\n\t\"$name\" $type";
         my $ins = $insert->clone
             ->values(Q($name, $type, $label, $table));
+
         if (defined $default) {
             my $json_default = $OpenResty::JsonXs->encode($default);
             $default = $self->process_default($openresty, $default);
@@ -448,6 +472,20 @@ sub new_model {
             $ins->cols(QI('default'))
                 ->values(Q($json_default));
         }
+
+        my $unique = delete $col->{unique};
+        if ($unique) {
+            #warn "Unique found: $unique\n";
+            # XXX FIXME: use alter table ... add constraint instead here...
+            $sql .= " unique";
+        }
+
+        if (%$col) {
+            my @key = sort(keys %$col);
+                die "Unrecognized keys for column \"$name\": ",
+                    join(", ", map { JSON::Syck::Dump($_) } @key), "\n";
+        }
+
         $sql2 .= $ins;
         $i++;
     }
@@ -483,7 +521,7 @@ sub check_default_expr {
 
 sub process_default {
     my ($self, $openresty, $default) = @_;
-    if (_STRING($default or $default eq '0')) {
+    if ($default eq '' or _STRING($default or $default eq '0')) {
         return Q($default);
     } elsif (_ARRAY($default)) {
         my $expr = join ' ', @$default;
@@ -619,7 +657,7 @@ sub has_model_col {
 
     return 1 if $col eq 'id';
     my $res;
-    my $select = OpenResty::SQL::Select->new('count(name)')
+    my $select = OpenResty::SQL::Select->new('id')
         ->from('_columns')
         ->where(table_name => Q($table_name))
         ->where(name => Q($col))
@@ -627,7 +665,7 @@ sub has_model_col {
     eval {
         $res = $openresty->select("$select")->[0][0];
     };
-    return $res + 0;
+    return $res;
 }
 
 sub drop_table {
