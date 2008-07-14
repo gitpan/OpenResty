@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003013';
+our $VERSION = '0.003014';
 
 use strict;
 use warnings;
@@ -31,7 +31,7 @@ use OpenResty::Handler::View;
 use OpenResty::Handler::Feed;
 use OpenResty::Handler::Action;
 use OpenResty::Handler::Role;
-use OpenResty::Handler::Admin;
+use OpenResty::Handler::Unsafe;
 use OpenResty::Handler::Login;
 use OpenResty::Handler::Captcha;
 use OpenResty::Handler::Version;
@@ -41,7 +41,7 @@ use Encode::Guess;
 #$YAML::Syck::ImplicitBinary = 1;
 
 our ($Backend, $BackendName);
-our %AccountFiltered;
+our (%AccountFiltered, %UnsafeAccounts);
 our $Cache;
 our $UUID = Data::UUID->new;
 
@@ -579,7 +579,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.13 released on July 11, 2008.
+This document describes OpenResty 0.3.14 released on July 14, 2008.
 
 =head1 DESCRIPTION
 
@@ -765,10 +765,6 @@ L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=OpenResty>.
 
 For a complete list of the contributors, please see L<http://svn.openfoundry.org/openapi/trunk/AUTHORS>.
 
-=head1 SEE ALSO
-
-L<OpenResty::Spec::Overview>, L<OpenResty::Spec::REST>, L<OpenResty::CheatSheet>, L<WWW::OpenResty>, L<WWW::OpenResty::Simple>.
-
 =head1 License and Copyright
 
 Copyright (c) 2007, 2008 by Yahoo! China EEEE Works, Alibaba Inc.
@@ -780,4 +776,8 @@ A copy of this license can be obtained from
 L<http://opensource.org/licenses/artistic-license-2.0.php>
 
 THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES. THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT PERMITTED BY YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=head1 SEE ALSO
+
+L<OpenResty::Spec::Overview>, L<openresty>, L<OpenResty::Spec::REST_cn>, L<OpenResty::CheatSheet>, L<WWW::OpenResty>, L<WWW::OpenResty::Simple>.
 

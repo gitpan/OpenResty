@@ -29,8 +29,8 @@ my %Dispatcher = (
     action => [
         qw< action_list action action_param action_exec  >
     ],
-    admin => [
-        qw< admin admin_op >
+    unsafe => [
+        qw< unsafe unsafe_op >
     ],
     role => [
         qw< role_list role access_rule_column access_rule >
@@ -61,7 +61,7 @@ sub init {
     if ($@) { $InitFatal = $@; return; }
     #warn "InitFatal: $InitFatal\n";
 
-    if (!$context || $context ne 'upgrade') {
+    if (!$context || ($context ne 'upgrade' && $context !~ /user/)) {
         eval {
             my $backend = $OpenResty::Backend;
             $backend->set_user('_global');
@@ -81,7 +81,7 @@ sub init {
         $OpenResty::Backend->set_user('_global');
         $OpenResty::Backend->do('set lc_messages to "C";');
     };
-    if ($@) { warn $@ }
+    if ($@ && $context !~ /user/) { warn $@ }
 
     $StatsLog = $OpenResty::Config{'frontend.stats_log_dir'};
     if ($StatsLog && !-d $StatsLog) {
@@ -92,6 +92,7 @@ sub init {
     if (my $filtered = $OpenResty::Config{'frontend.filtered'}) {
         #warn "HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         #use lib "$FindBin::Bin/../../../openresty-filter-qp/trunk/lib";
+        $filtered =~ s/^\s+|\s+$//g;
         require OpenResty::Filter::QP;
         my @accounts = split /\s+/, $filtered;
         for my $account (@accounts) {
@@ -99,6 +100,13 @@ sub init {
         }
         #### %OpenResty::AccountFiltered
         ### $filtered
+    }
+    if (my $unsafe_accounts = $OpenResty::Config{'frontend.unsafe'}) {
+        $unsafe_accounts =~ s/^\s+|\s+$//g;
+        my @accounts = split /\s+/, $unsafe_accounts;
+        for my $account (@accounts) {
+            $OpenResty::UnsafeAccounts{$account} = 1;
+        }
     }
 }
 
@@ -330,3 +338,45 @@ sub process_request {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+OpenResty::Dispatcher - The main dispatcher for the OpenResty server
+
+=head1 SYNOPSIS
+
+    use OpenResty::Dispatcher;
+
+    OpenResty::Dispatcher->init($context);
+         # $context is the bin/openresty script's input command,
+         #   like 'fastcgi', 'cgi', or 'upgrade'.
+
+    my $res = OpenResty::Dispatcher->process_request($cgi);
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+All the methods below are static. This class has no instances.
+
+=over
+
+=item C<init($context)>
+
+Connects to the database and preserving the global database connection, reads the config options, checks the metamodel version if C<$context> is not "C<upgrade>", and does other initialization jobs.
+
+=item C<$res = process_request($cgi, $call_level, $parent_account)>
+
+Process the incoming OpenResty RESTful request (not necessarily HTTP requests though). The first argument is a CGI object while the latter two only make sense in recursive calls issued by OpenRsety actions.
+
+=back
+
+=head1 AUTHOR
+
+Agent Zhang (agentzh) C<< <agentzh@yahoo.cn> >>.
+
+=head1 SEE ALSO
+
+L<OpenResty>.
+

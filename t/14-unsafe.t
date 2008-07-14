@@ -1,10 +1,17 @@
 # vi:filetype=
 
-# The Admin API is a just hack,
-# which will be removed once the Action API is implemented.
+# The Unsafe API is a just hack,
+# which will be obsolete once the Action API is implemented.
 
 my $ExePath;
 BEGIN {
+    use OpenResty::Config;
+    OpenResty::Config->init;
+    unless ($OpenResty::Config{'test_suite.test_unsafe'}) {
+        $skip = "Config option test_suite.test_unsafe is set to false.\n";
+        return;
+    }
+
     use FindBin;
     $ExePath = "$FindBin::Bin/../haskell/bin/restyscript";
     if (!-f $ExePath) {
@@ -34,7 +41,7 @@ DELETE /=/model.js?user=$TestAccount&password=$TestPass&use_cookie=1
 
 === TEST 2: drop tables
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "drop table if exists _books cascade;
 drop table if exists _cats;
 drop table if exists _books2 cascade;"
@@ -45,7 +52,7 @@ drop table if exists _books2 cascade;"
 
 === TEST 3: Create a DB table
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "create table _books (id serial primary key, body text, num integer default 0);
 create table _cats (id serial primary key, name text);"
 --- response
@@ -55,7 +62,7 @@ create table _cats (id serial primary key, name text);"
 
 === TEST 4: Insert some records
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "insert into _books (body) values ('Larry Wall');
 insert into _books (body) values ('Audrey Tang');
 insert into _cats (name) values ('mimi');"
@@ -66,7 +73,7 @@ insert into _cats (name) values ('mimi');"
 
 === TEST 5: .Select data
 --- request
-POST /=/admin/select
+POST /=/unsafe/select
 "select * from _books"
 --- response
 [
@@ -78,7 +85,7 @@ POST /=/admin/select
 
 === TEST 6: CREATE FUNCTION
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "CREATE OR REPLACE FUNCTION add_child() returns trigger as $$
     begin
         if NEW.id <> 0 then
@@ -94,7 +101,7 @@ $$ language plpgsql;"
 
 === TEST 7: create tirgger
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "CREATE TRIGGER add_child_t BEFORE INSERT ON _books FOR EACH ROW EXECUTE PROCEDURE add_child();"
 --- response
 {"success":1}
@@ -103,7 +110,7 @@ POST /=/admin/do
 
 === TEST 8: Insert some records
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "insert into _books (body) values ('Larry Wall');
 insert into _books (body) values ('Audrey Tang');
 insert into _cats (name) values ('mimi');"
@@ -114,7 +121,7 @@ insert into _cats (name) values ('mimi');"
 
 === TEST 9: .Select data
 --- request
-POST /=/admin/select
+POST /=/unsafe/select
 "select * from _books where id=1"
 --- response
 [{"body":"Larry Wall","num":"2","id":"1"}]
@@ -123,7 +130,7 @@ POST /=/admin/select
 
 === TEST 10: Create a DB table
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "create table _books2 (id serial primary key, body text, num integer default 0);"
 --- response
 {"success":1}
@@ -132,7 +139,7 @@ POST /=/admin/do
 
 === TEST 11: CREATE PROC
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "DROP FUNCTION if exists hello_world0(int,int);
 CREATE OR REPLACE FUNCTION hello_world0(i int,j int) RETURNS _books AS $Q$
     declare
@@ -159,7 +166,7 @@ GET /=/post/action/RunView/~/~?data="select hello_world0(1,0)"
 
 === TEST 13 CREATE PROC
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "DROP FUNCTION if exists hello_world4(int,int);
 CREATE OR REPLACE FUNCTION hello_world4(i int,j int) RETURNS setof _books2 AS $Q$
     declare
@@ -188,7 +195,7 @@ sss=[];
 
 === TEST 15: drop tables
 --- request
-POST /=/admin/do
+POST /=/unsafe/do
 "drop table if exists _books cascade;
 drop table if exists _books2 cascade;
 drop table if exists _cats;"

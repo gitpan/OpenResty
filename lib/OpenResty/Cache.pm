@@ -151,4 +151,43 @@ sub remove_has_role {
 }
 
 1;
+__END__
+
+=head1 NAME
+
+OpenResty::Cache - Cache for OpenResty
+
+=head1 SYNOPSIS
+
+    use OpenResty::Config;
+    use OpenResty::Cache;
+
+    OpenResty::Config->init;
+    my $cache = OpenResty::Cache->new;
+    $cache->set('key' => 'value'); # use the cache to store (session) data
+    $cache->set('key' => 'value', 'trivial'); # pure caching
+    print $cache->get('key');  # read the value for the key
+    $cache->remove('key');
+
+=head1 DESCRIPTION
+
+This class provides an abstract interface for two caching libraries, L<Cache::FileCache> and L<Cache::Memcached::Fast>.
+
+Which underlying cache library to use depends on the C<cache.type> config option in the F<etc/site_openresty.conf> file.
+
+Note that C<filecache> could eat up your hard disk very quickly. (you'll observe the bloating directory F</tmp/FileCache>.) C<filecache> is only suitable for development; for production use, please use C<memcached> instead (by specifying the C<cache.type> and C<cache.servers> options in F<etc/site_openresty.conf>).
+
+=head1 METHODS
+
+=over
+
+=back
+
+=head1 AUTHOR
+
+Agent Zhang (agentzh) C<< <agentzh@yahoo.cn> >>.
+
+=head1 SEE ALSO
+
+L<OpenResty>, L<Cache::FileCache>, L<Cache::Memcached::Fast>.
 

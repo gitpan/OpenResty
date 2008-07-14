@@ -309,15 +309,11 @@ sub upgrade_local_metamodel {
     my ($self, $base) = @_;
 
     if (!defined $base) { die "No upgrading base specified" }
-    if ($base == 0) {
-        if (!$self->has_user('_global')) {
-            my $user = $self->{user};
-            $self->upgrade_global_metamodel(0);
-            $self->set_user($user);
-        }
+    if (!$self->has_user('_global')) {
+        my $user = $self->{user};
+        $self->upgrade_global_metamodel(0);
+        $self->set_user($user);
     }
-    #my @caller = caller;
-    #### upgrade_local_metamodel caller: @caller
     $self->_upgrade_metamodel($base, \@LocalVersionDelta);
 }
 
@@ -335,8 +331,6 @@ sub _upgrade_metamodel {
     }
     my $res;
     my $max = @$delta_table - 1;
-    #my @caller = caller;
-    #### caller: @caller
     #### Upgrading meta model...
     for my $i ($base..$max) {
         my $entry = $delta_table->[$i];
@@ -492,4 +486,21 @@ sub update_captcha_secret
 }
 
 1;
+__END__
+
+=head1 NAME
+
+OpenResty::Backend::Base - Base class for OpenResty backend classes
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 AUTHOR
+
+Agent Zhang (agentzh) C<< <agentzh@yahoo.cn> >>.
+
+=head1 SEE ALSO
+
+L<OpenResty::Backend::Pg>, L<OpenResty::Backend::PgFarm>, L<OpenResty::Backend::PgMocked>, L<OpenResty>.
 

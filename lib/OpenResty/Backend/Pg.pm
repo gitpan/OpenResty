@@ -6,6 +6,7 @@ use warnings;
 #use Smart::Comments;
 use DBI;
 use OpenResty::SQL::Select;
+use OpenResty::Limits;
 use base 'OpenResty::Backend::Base';
 
 our $Recording;
@@ -77,7 +78,7 @@ sub select {
     } else {
         return $dbh->selectall_arrayref(
             $sql,
-            $opts->{use_hash} ? {Slice=>{}} : ()
+            $opts->{use_hash} ? {MaxRows => $MAX_SELECT_LIMIT, Slice=>{}} : ()
         );
     }
 }
@@ -95,7 +96,7 @@ sub do {
         OpenResty::Backend::PgMocked->record($sql => $res);
         return $res;
     } else {
-        return $self->{dbh}->do($sql);
+         $self->{dbh}->do($sql);
     }
 
 }
@@ -229,7 +230,7 @@ OpenResty::Backend::Pg - OpenResty backend for PostgreSQL standalone databases
 
 =head1 AUTHOR
 
-Agent Zhang (agentzh) C<< <agentzh@gmail.com >>
+Agent Zhang (agentzh) C<< <agentzh@yahoo.cn> >>
 
 =head1 SEE ALSO
 
