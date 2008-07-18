@@ -2,7 +2,7 @@ NAME
     OpenResty - General-purpose web service platform for web applications
 
 VERSION
-    This document describes OpenResty 0.3.15 released on July 15, 2008.
+    This document describes OpenResty 0.3.16 released on July 18, 2008.
 
 DESCRIPTION
     This module implements the server-side OpenResty web service protocol.
@@ -33,13 +33,13 @@ DESCRIPTION
     We're already running an instance of the OpenResty server on our Yahoo!
     China's production machines:
 
-    <http://resty.eeeeworks.org/=/version>
+    <http://api.openresty.org/=/version>
 
     And there're several (pure-client-side) web sites alreadying taking
     advantage of the services:
 
     OpenResty's admin site
-        <http://resty.eeeeworks.org/admin/>
+        <http://openresty.org/admin/>
 
     agentzh's blog and EEEE Works' blog
         <http://blog.agentzh.org>

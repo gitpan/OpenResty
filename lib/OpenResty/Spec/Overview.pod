@@ -637,7 +637,7 @@ IMHO ;)
 
 =item OpenResty's admin site
 
-L<http://resty.eeeeworks.org/admin/>
+L<http://openresty.org/admin/>
 
 =item agentzh's blog and EEEE Works' blog
 
@@ -672,4 +672,8 @@ Agent Zhang C<< <agentzh@yahoo.cn> >>
   Texts. A copy of the license can be found at
 
     http://www.gnu.org/licenses/fdl.html
+
+=head1 SEE ALSO
+
+L<OpenResty::Spec::REST_cn>, L<OpenResty>, L<OpenResty::CheatSheet>.
 

@@ -42,10 +42,10 @@ requires            ('Data::Structure::Util' => '0.15');
 requires            ('DateTime::Format::Pg');
 requires            ('DateTime::Format::Strptime');
 requires            ('Digest::MD5');
+requires            ('File::ShareDir');
 # modules needed by new captcha mechanism
 requires			('Crypt::CBC');
 requires			('Crypt::Rijndael');
-requires                        ('MIME::Base64');
 requires                        ('IPC::Run3');
 requires                        ('IPC::Run');
 requires                        ('Time::HiRes');
@@ -86,6 +86,10 @@ if ($arg eq 'product') {
 #recommends          ('Cache::FastMmap' => '1.24');
 
 install_script('bin/openresty');
+if (-f 'haskell/bin/restyscript') {
+    install_script('haskell/bin/restyscript');
+}
+
 use_test_base();
 no_index( directory => qw< etc tmp demo minisql clients doc t > );
 
@@ -114,6 +118,8 @@ my $ans = prompt($message);
 if ($ans && $ans =~ /y/i) {
     system("$^X bin/fetch-font.pl");
 }
+
+install_share;
 
 WriteAll();
 

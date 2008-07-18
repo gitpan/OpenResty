@@ -6,6 +6,7 @@ build_requires:
   CGI: 3.33
   Cache::Cache: 1.05
   Class::Prototyped: 0
+  ExtUtils::MakeMaker: 6.11
   HTTP::Response: 1.53
   LWP::UserAgent: 0
   Test::LongString: 0
@@ -27,6 +28,8 @@ no_index:
     - clients
     - doc
     - t
+    - share
+    - share
     - inc
     - t
     - demo
@@ -55,6 +58,7 @@ requires:
   Digest::MD5: 0
   Encode::Guess: 0
   FCGI: 0
+  File::ShareDir: 0
   GD::SecurityImage: 1.64
   Hash::Merge: 0
   IPC::Run: 0
@@ -62,10 +66,9 @@ requires:
   JSON::XS: 2.2
   List::MoreUtils: 0
   List::Util: 0
-  MIME::Base64: 0
   Params::Util: 0.22
   Parse::Yapp: 0
   Time::HiRes: 0
   YAML::Syck: 1.04
   perl: 5.6.1
-version: 0.3.15
+version: 0.3.16

@@ -10,8 +10,8 @@ my $ua = LWP::UserAgent->new;
 $ua->timeout(10);
 $ua->env_proxy;
 
-mkdir 'font' unless -d 'font';
-my $file = 'font/wqy-zenhei.ttf';
+mkdir 'share/font' unless -d 'share/font';
+my $file = 'share/font/wqy-zenhei.ttf';
 unless (-f $file and -s $file > 13000000) {
     warn "Fetching $url...\n";
     $ua->mirror($url, $file);

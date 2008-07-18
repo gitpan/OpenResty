@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003015';
+our $VERSION = '0.003016';
 
 use strict;
 use warnings;
@@ -579,7 +579,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.15 released on July 15, 2008.
+This document describes OpenResty 0.3.16 released on July 18, 2008.
 
 =head1 DESCRIPTION
 
@@ -618,7 +618,7 @@ A (sort of) competitor for the Facebook Data Store API.
 
 We're already running an instance of the OpenResty server on our Yahoo! China's production machines:
 
-L<http://resty.eeeeworks.org/=/version>
+L<http://api.openresty.org/=/version>
 
 And there're several (pure-client-side) web sites alreadying taking advantage of the services:
 
@@ -626,7 +626,7 @@ And there're several (pure-client-side) web sites alreadying taking advantage of
 
 =item OpenResty's admin site
 
-L<http://resty.eeeeworks.org/admin/>
+L<http://openresty.org/admin/>
 
 =item agentzh's blog and EEEE Works' blog
 

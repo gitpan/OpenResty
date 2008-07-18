@@ -1,3 +1,10 @@
+debian/conffiles
+debian/control
+debian/postinst
+debian/rules
+misc/restylog/import.pl
+misc/restylog/perl.css
+LICENSE
 AUTHORS
 bin/test-sql.pl
 bin/export-model.pl
@@ -188,6 +195,7 @@ inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
 inc/Module/Install/TestBase.pm
 inc/Module/Install/Win32.pm
+inc/Module/Install/Share.pm
 inc/Module/Install/WriteAll.pm
 inc/Spiffy.pm
 inc/Test/Base.pm
@@ -239,7 +247,7 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 META.yml
 README
-revision
+share/openresty_revision
 t/TODO
 t/01-sanity.t
 t/02-carrie.t
