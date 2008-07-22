@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003017';
+our $VERSION = '0.003018';
 
 use strict;
 use warnings;
@@ -126,10 +126,10 @@ sub init {
         #die "Backend connection lost: ", $db_state, "\n";
     }
 
-    $self->{_use_cookie}  = $cgi->url_param('use_cookie') || 0;
-    $self->{_session}  = $cgi->url_param('session');
+    $self->{_use_cookie}  = $self->builtin_param('_use_cookie') || 0;
+    $self->{_session}  = $self->builtin_param('_session');
 
-    my $charset = $cgi->url_param('charset') || 'UTF-8';
+    my $charset = $self->builtin_param('_charset') || 'UTF-8';
 
     if ($charset =~ /^guess(?:ing)?$/i) {
         undef $charset;
@@ -159,30 +159,30 @@ sub init {
     }
     $self->{'_charset'} = $charset;
 
-    $self->{'_var'} = $cgi->url_param('var');
-    $self->{'_callback'} = $cgi->url_param('callback');
+    $self->{'_var'} = $self->builtin_param('_var');
+    $self->{'_callback'} = $self->builtin_param('_callback');
 
-    my $offset = $cgi->url_param('offset');
+    my $offset = $self->builtin_param('_offset');
     $offset ||= 0;
     if ($offset !~ /^\d+$/) {
         die "Invalid value for the \"offset\" param: $offset\n";
     }
     $self->{_offset} = $offset;
 
-    my $limit = $cgi->url_param('count');
+    my $limit = $self->builtin_param('_count');
     # limit is an alias for count
     if (!defined $limit) {
-        $limit = $cgi->url_param('limit');
+        $limit = $self->builtin_param('_limit');
     }
     if (!defined $limit) {
         $limit = $MAX_SELECT_LIMIT;
     } else {
         $limit ||= 0;
         if ($limit !~ /^\d+$/) {
-            die "Invalid value for the \"count\" param: $limit\n";
+            die "Invalid value for the \"_count\" param: $limit\n";
         }
         if ($limit > $MAX_SELECT_LIMIT) {
-            die "Value too large for the limit param: $limit\n";
+            die "Value too large for the _limit param: $limit\n";
         }
     }
     $self->{_limit} = $limit;
@@ -256,7 +256,7 @@ sub init {
         $http_meth = 'DELETE';
     } elsif ($http_meth eq 'GET' and $url =~ s{^=/(post|put)/}{=/} ) {
         $http_meth = uc($1);
-        $req_data = $cgi->url_param('data');
+        $req_data = $self->builtin_param('_data');
         #$req_data = $Importer->($content);
 
         #warn "Content: ", $Dumper->($content);
@@ -375,7 +375,8 @@ sub response {
     $str =~ s/\n+$//s;
 
     #my $meth = $self->{_http_method};
-    my $last_res_id = $cgi->url_param('last_response');
+    # XXX last_response is deprecated; use _last_response instead
+    my $last_res_id = $self->builtin_param('_last_response');
     ### $last_res_id;
     ### $meth;
     if (defined $last_res_id) {
@@ -568,6 +569,17 @@ sub set_role {
     $self->{_role} = $role;
 }
 
+sub builtin_param {
+    my ($self, $key) = @_;
+    my $cgi = $self->{_cgi};
+    if (substr($key, 0, 1) ne '_') {
+        die "Builtin param must be preceded by an underscore.\n";
+    }
+    (my $deprecated = $key) =~ s/^_//;
+    return scalar($cgi->url_param($deprecated)) ||
+        scalar($cgi->url_param($key));
+}
+
 1;
 __END__
 
@@ -579,7 +591,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.17 released on July 18, 2008.
+This document describes OpenResty 0.3.18 released on July 22, 2008.
 
 =head1 DESCRIPTION
 

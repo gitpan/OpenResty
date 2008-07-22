@@ -3,7 +3,8 @@ if (typeof window.OpenResty == "undefined") {
 window.undefined = window.undefined;
 
 var OpenResty = {
-    callbackMap: {}
+    callbackMap: {},
+    isDone: {}
 };
 
 OpenResty.Client = function (params) {
@@ -60,7 +61,7 @@ OpenResty.Client.prototype.postByGet = function (url) {
     content = JSON.stringify(content);
     //alert("type of content: " + typeof(content));
     //alert("content: " + content);
-    args.data = content;
+    args._data = content;
     this.get(url, args);
 };
 
@@ -79,11 +80,11 @@ OpenResty.Client.prototype.post = function (url) {
     var formId = this.formId;
     if (!formId) throw "No form specified.";
 
-    if (this.session) args.session = this.session;
-    if (!this.session && !args.user)
-        args.user = this.user;
+    if (this.session) args._session = this.session;
+    if (!this.session && !args._user)
+        args._user = this.user;
 
-    args.last_response = Math.round( Math.random() * 1000000 );
+    args._last_response = Math.round( Math.random() * 1000000 );
     content = JSON.stringify(content);
     //alert("type of content: " + typeof(content));
     //alert("content: " + content);
@@ -111,7 +112,7 @@ OpenResty.Client.prototype.post = function (url) {
         handleAs: 'html',
         handle: function () {
             //alert("Getting last response!");
-            self.get('/=/last/response/' + args.last_response);
+            self.get('/=/last/response/' + args._last_response);
         }
     });
 
@@ -140,7 +141,7 @@ OpenResty.Client.prototype.putByGet = function (url) {
     content = JSON.stringify(content);
     //alert("type of content: " + typeof(content));
     //alert("content: " + content);
-    args.data = content;
+    args._data = content;
     this.get(url, args);
 };
 
@@ -166,23 +167,39 @@ OpenResty.Client.prototype.get = function (url, args) {
     if (!this.server) throw "No server specified for OpenResty.";
     //if (!this.user) throw "No user specified for OpenResty.";
 
-    if (this.session) args.session = this.session;
-    if (!this.session && !args.user)
-        args.user = this.user;
+    if (this.session) args._session = this.session;
+    if (!this.session && !args._user)
+        args._user = this.user;
 
     //args.password = this.password || '';
     if (url.match(/\?/)) throw "URL should not contain '?'.";
-    args._rand = Math.round( Math.random() * 100000 );
+    var reqId = Math.round( Math.random() * 100000 );
+    //args._rand = reqId;
+
+    var onerror = this.onerror;
+    if (onerror == null)
+        onerror = function () { alert("Failed to do GET " + url) };
+
     //alert(args._rand);
     //if (!isLogin) args.user = this.user;
     //args.password = this.password;
-    if (typeof this.callback == 'string') {
-        this.callback = eval(this.callback);
+    var callback = this.callback;
+    if (typeof callback == 'string') {
+        callback = eval(callback);
     }
-    OpenResty.callbackMap[args._rand] = this.callback;
-    args.callback = "OpenResty.callbackMap[" + args._rand + "]";
+    OpenResty.isDone[reqId] = false;
+    this.callback = function (res) {
+        OpenResty.isDone[reqId] = true;
+        OpenResty.callbackMap[reqId] = null;
+        callback(res);
+    };
+    OpenResty.callbackMap[reqId] = this.callback;
+    args._callback = "OpenResty.callbackMap[" + reqId + "]";
+
+    var headTag = document.getElementsByTagName('head')[0];
+
     var scriptTag = document.createElement("script");
-    scriptTag.id = "openapiScriptTag" + args._rand;
+    scriptTag.id = "openapiScriptTag" + reqId;
     scriptTag.className = '_openrestyScriptTag';
     var arg_list = new Array();
     for (var key in args) {
@@ -190,7 +207,34 @@ OpenResty.Client.prototype.get = function (url, args) {
     }
     scriptTag.src = this.server + url + "?" + arg_list.join("&");
     scriptTag.type = "text/javascript";
-    var headTag = document.getElementsByTagName('head')[0];
+    scriptTag.onload = scriptTag.onreadystatechange = function () {
+        var done = OpenResty.isDone[reqId];
+        if (done) {
+            //alert("We're done!");
+            setTimeout(function () {
+                try {
+                    headTag.removeChild(scriptTag);
+                } catch (e) {}
+            }, 0);
+            return;
+        }
+        if (!this.readyState ||
+                this.readyState == "loaded" ||
+                this.readyState == "complete") {
+            setTimeout(function () {
+                if (!OpenResty.isDone[reqId]) {
+                    //alert("reqId: " + reqId);
+                    onerror();
+                    OpenResty.isDone[reqId] = true;
+                    setTimeout(function () {
+                        try {
+                            headTag.removeChild(scriptTag);
+                        } catch (e) {}
+                    }, 0);
+                }
+            }, 50);
+        }
+    };
     headTag.appendChild(scriptTag);
 };
 
@@ -203,6 +247,7 @@ OpenResty.Client.prototype.del = function (url, args) {
 OpenResty.Client.prototype.purge = function () {
     // document.getElementByClassName('openapiScriptTag').remove();
     OpenResty.callbackMap = {};
+    OpenResty.isDone = {};
     var nodes = document.getElementsByTagName('script');
     for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];

@@ -121,7 +121,7 @@ function dispatchByAnchor () {
     savedAnchor = anchor;
 
     // prevent memory leaks from dynamically created <script> nodes:
-    if (loadingCount <= 0) openresty.purge();
+    //if (loadingCount <= 0) openresty.purge();
     loadingCount = 0;
 
     var match = anchor.match(/^post-(\d+)(:comments|comment-(\d+))?/);
@@ -210,9 +210,9 @@ function getPostList (page) {
     setStatus(true, 'renderPostList');
     openresty.callback = renderPostList;
     openresty.get('/=/model/Post/~/~', {
-        count: itemsPerPage,
-        order_by: 'id:desc',
-        offset: itemsPerPage * (page - 1)
+        _count: itemsPerPage,
+        _order_by: 'id:desc',
+        _offset: itemsPerPage * (page - 1)
     });
 }
 
