@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003018';
+our $VERSION = '0.003019';
 
 use strict;
 use warnings;
@@ -9,6 +9,7 @@ use warnings;
 use Data::UUID;
 use YAML::Syck ();
 use JSON::XS ();
+use Compress::Zlib;
 
 use List::Util qw(first);
 use Params::Util qw(_HASH _STRING _ARRAY0 _ARRAY _SCALAR);
@@ -326,6 +327,10 @@ sub response {
         }
     }
 
+    my $use_gzip = $OpenResty::Config{'frontend.use_gzip'} &&
+        index($ENV{HTTP_ACCEPT_ENCODING} || '', 'gzip') >= 0;
+    #warn "use gzip: $use_gzip\n";
+
     print "HTTP/1.1 200 OK\n";
     my $type = $self->{_type} || 'text/plain';
     #warn $s;
@@ -384,12 +389,20 @@ sub response {
         $Cache->set_last_res($last_res_id, $str);
     }
     #warn ">>>>>>>>>>>>Cookies<<<<<<<<<<<<<<: @cookies\n";
+    if (length($str) < 500 && $use_gzip) {
+        undef $use_gzip;
+    }
     print $cgi->header(
         -type => "$type" . ($type =~ /text/ ? "; charset=$charset" : ""),
+        $use_gzip ? ('-content-encoding' => 'gzip', '-accept-encoding' => 'Vary') : (),
         @cookies ? (-cookie => \@cookies) : ()
     );
-
-    print $str, "\n";
+    if ($use_gzip) {
+        # compress the content part
+        print Compress::Zlib::memGzip($str);
+    } else {
+        print $str, "\n";
+    }
 }
 
 sub set_formatter {
@@ -591,7 +604,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.18 released on July 22, 2008.
+This document describes OpenResty 0.3.19 released on July 25, 2008.
 
 =head1 DESCRIPTION
 
@@ -652,7 +665,7 @@ L<http://www.yisou.com/opi/post.html>
 
 =back
 
-This library is still in B<pre-alpha> stage and the API is still in flux. We're just following the "release early, releaes often" guideline. So please check back often ;)
+This library is still in B<beta> stage and the API is still in flux. We're just following the "release early, releaes often" guideline. So please check back often ;)
 
 See L<OpenResty::Spec::Overview> for more detailed information.
 

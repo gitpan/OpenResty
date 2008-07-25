@@ -43,6 +43,7 @@ requires            ('DateTime::Format::Pg');
 requires            ('DateTime::Format::Strptime');
 requires            ('Digest::MD5');
 requires            ('File::ShareDir');
+requires            ('Compress::Zlib');
 # modules needed by new captcha mechanism
 requires			('Crypt::CBC');
 requires			('Crypt::Rijndael');
@@ -91,7 +92,7 @@ if (-f 'haskell/bin/restyscript') {
 }
 
 use_test_base();
-no_index( directory => qw< etc tmp demo minisql clients doc t > );
+no_index( directory => qw< etc misc tmp demo minisql clients doc t > );
 
 auto_install();
 
