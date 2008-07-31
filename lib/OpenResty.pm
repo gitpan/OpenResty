@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003019';
+our $VERSION = '0.003020';
 
 use strict;
 use warnings;
@@ -604,7 +604,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.19 released on July 25, 2008.
+This document describes OpenResty 0.3.20 released on July 31, 2008.
 
 =head1 DESCRIPTION
 
@@ -665,8 +665,6 @@ L<http://www.yisou.com/opi/post.html>
 
 =back
 
-This library is still in B<beta> stage and the API is still in flux. We're just following the "release early, releaes often" guideline. So please check back often ;)
-
 See L<OpenResty::Spec::Overview> for more detailed information.
 
 L<OpenResty::CheatSheet> also provides a good enough summary for the REST interface.
@@ -691,6 +689,10 @@ L<http://blog.agentzh.org/#post-79>
 
 L<http://blog.agentzh.org/#post-81>
 
+=item "The first yahoo.cn feature that is powered by OpenResty"
+
+L<http://blog.agentzh.org/#post-86>
+
 =item "Client-side web site DIY" (Chinese)
 
 L<http://blog.agentzh.org/#post-80>
@@ -700,6 +702,10 @@ L<http://blog.agentzh.org/#post-80>
 L<http://www.eeeeworks.org/#post-6>
 
 =back
+
+=head1 CAVEATS
+
+This library is still in the B<beta> phase and the API is still in flux. We're just following the "release early, releaes often" guideline. So please check back often ;)
 
 =head1 INSTALLATION
 

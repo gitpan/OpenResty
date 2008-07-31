@@ -115,8 +115,8 @@ function dispatchByAnchor () {
     if (savedAnchor == anchor)
         return;
     if (anchor == "") {
-        anchor = 'main';
-        location.hash = 'main';
+        anchor = 'posts/1';
+        location.hash = 'posts/1';
     }
     savedAnchor = anchor;
 
@@ -132,20 +132,32 @@ function dispatchByAnchor () {
         return;
     }
 
-    match = anchor.match(/^archive-(\d+)-(\d+)$/);
+    match = anchor.match(/^search\/(\d+)\/(.*)/);
+    if (match) {
+        var page = parseInt(match[1]);
+        var query = match[2];
+        $('.pager').html('');
+
+        $('#searchbox').val(query);
+        getSearchResults(query, page);
+        getPagerForSearch(query, page);
+        return;
+    }
+
+    match = anchor.match(/^archive\/(\d+)\/(\d+)$/);
     if (match) {
         var year = match[1];
         var month = match[2];
         getArchive(year, month);
         return;
     }
-    match = anchor.match(/^(?:post-list|post-list-(\d+))$/);
+    match = anchor.match(/^(?:posts|posts\/(\d+))$/);
     var page = 1;
     //alert(anchor + " " + location.hash);
     if (match)
         page = parseInt(match[1]) || 1;
-    else if (anchor != 'main')
-        top.location.hash = 'main';
+    else if (anchor != 'posts/1')
+        top.location.hash = 'posts/1';
 
     //debug("before getPostList...");
     getPostList(page);
@@ -153,7 +165,7 @@ function dispatchByAnchor () {
     getPager(page);
     //debug("after getPager...");
 
-    $(".blog-top").attr('id', 'post-list-' + page);
+    $(".blog-top").attr('id', 'posts/' + page);
 }
 
 function getArchive (year, month) {
@@ -176,7 +188,7 @@ function getArchive (year, month) {
         '/=/view/FullPostsByMonth/~/~',
         { count: 40, year: year, month: month }
     );
-    $(".blog-top").attr('id', 'archive-' + year + '-' + month);
+    $(".blog-top").attr('id', 'archive/' + year + '/' + month);
 }
 
 function renderArchiveNav (res) {
@@ -216,9 +228,45 @@ function getPostList (page) {
     });
 }
 
+function getSearchResults (query, page) {
+    setStatus(true, 'renderSearchResults');
+    openresty.callback = function (res) { renderSearchResults(res, query); };
+    var q = query2tsquery(query);
+    //alert("Query: " + q);
+    openresty.get('/=/view/PostSearch/~/~', {
+        offset: itemsPerPage * (page - 1),
+        count: itemsPerPage,
+        query: q,
+        order_dir: 'desc'
+    });
+}
+
+function doPostSearch () {
+    var query = $('#searchbox').val();
+    savedAndhor = null;
+    var anchor = '#search/1/' + query;
+    location.hash = anchor;
+    //alert(location.hash);
+    if (savedAnchor == anchor.replace(/^\#/, '')) savedAnchor = null;
+    dispatchByAnchor();
+}
+
+function query2tsquery (query) {
+    return query.replace(/[\s(){},.|&$]+/g, ' ')
+                 .replace(/^\s+|\s+$/g, '')
+                 .replace(/ +/g, '|');
+}
+
+function getPagerForSearch (query, page) {
+    setStatus(true, 'renderPagerForSearch');
+    openresty.callback = function (res) { renderPager(res, page, 'search/', '/' + query); };
+    var q = query2tsquery(query);
+    openresty.get('/=/view/RowCountForSearch/~/~', {query: q});
+}
+
 function getPager (page) {
     setStatus(true, 'renderPager');
-    openresty.callback = function (res) { renderPager(res, page); };
+    openresty.callback = function (res) { renderPager(res, page, 'posts/', ''); };
     openresty.get('/=/view/RowCount/model/Post');
 }
 
@@ -488,7 +536,7 @@ function renderComments (res) {
     setStatus(false, 'renderComments');
     //alert("Comments: " + res.error);
     if (!openresty.isSuccess(res)) {
-        error("Failed to render post list: " + res.error);
+        error("Failed to get post list: " + res.error);
     } else {
         $(".comments-content").html(
             Jemplate.process('comments.tt', { comments: res })
@@ -500,7 +548,7 @@ function renderComments (res) {
 function renderPostList (res) {
     setStatus(false, 'renderPostList');
     if (!openresty.isSuccess(res)) {
-        error("Failed to render post list: " + res.error);
+        error("Failed to get post list: " + res.error);
     } else {
         //alert(JSON.stringify(data));
         $("#beta-inner.pkg").html(
@@ -510,7 +558,21 @@ function renderPostList (res) {
     resetAnchor();
 }
 
-function renderPager (res, page) {
+function renderSearchResults (res, query) {
+    setStatus(false, 'renderSearchResults');
+    if (!openresty.isSuccess(res)) {
+        error("Failed to get search results: " + res.error);
+    } else {
+        if (res.length) {
+            var html = Jemplate.process('post-list.tt', { post_list: res })
+            $("#beta-inner.pkg").html(html).postprocess();
+        } else {
+            $("#beta-inner.pkg").html("<p>Sorry, no search results found for query <b>\"" + query + "\"</b>.</p>");
+        }
+    }
+}
+
+function renderPager (res, page, prefix, suffix) {
     setStatus(false, 'renderPager');
     if (!openresty.isSuccess(res)) {
         error("Failed to render pager: " + res.error);
@@ -521,7 +583,7 @@ function renderPager (res, page) {
         //debug("before redering pager (2)...");
         var html = Jemplate.process(
             'pager.tt',
-            { page: page, page_count: pageCount, title: 'Pages' }
+            { page: page, page_count: pageCount, title: 'Pages', prefix: prefix, suffix: suffix }
         );
         //debug("after html generation...");
 
