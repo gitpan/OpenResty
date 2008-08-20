@@ -101,25 +101,25 @@ sub new {
 		}
 	},
 	{#State 8
-		DEFAULT => -120
+		DEFAULT => -125
 	},
 	{#State 9
-		DEFAULT => -119
+		DEFAULT => -124
 	},
 	{#State 10
 		ACTIONS => {
 			"(" => 30
 		},
-		DEFAULT => -75
+		DEFAULT => -79
 	},
 	{#State 11
-		DEFAULT => -72
+		DEFAULT => -76
 	},
 	{#State 12
-		DEFAULT => -70
+		DEFAULT => -74
 	},
 	{#State 13
-		DEFAULT => -67
+		DEFAULT => -71
 	},
 	{#State 14
 		ACTIONS => {
@@ -133,25 +133,25 @@ sub new {
 			"/" => 38,
 			"as" => 39
 		},
-		DEFAULT => -25
+		DEFAULT => -29
 	},
 	{#State 15
-		DEFAULT => -26
+		DEFAULT => -30
 	},
 	{#State 16
-		DEFAULT => -36
+		DEFAULT => -40
 	},
 	{#State 17
-		DEFAULT => -39
+		DEFAULT => -43
 	},
 	{#State 18
 		ACTIONS => {
 			"." => 40
 		},
-		DEFAULT => -73
+		DEFAULT => -77
 	},
 	{#State 19
-		DEFAULT => -40
+		DEFAULT => -44
 	},
 	{#State 20
 		ACTIONS => {
@@ -178,10 +178,10 @@ sub new {
 		}
 	},
 	{#State 21
-		DEFAULT => -38
+		DEFAULT => -42
 	},
 	{#State 22
-		DEFAULT => -41
+		DEFAULT => -45
 	},
 	{#State 23
 		ACTIONS => {
@@ -208,13 +208,13 @@ sub new {
 		ACTIONS => {
 			"," => 43
 		},
-		DEFAULT => -23
+		DEFAULT => -27
 	},
 	{#State 25
 		ACTIONS => {
 			"|" => 44
 		},
-		DEFAULT => -77
+		DEFAULT => -81
 	},
 	{#State 26
 		ACTIONS => {
@@ -522,10 +522,10 @@ sub new {
 		}
 	},
 	{#State 45
-		DEFAULT => -85
+		DEFAULT => -89
 	},
 	{#State 46
-		DEFAULT => -83
+		DEFAULT => -87
 	},
 	{#State 47
 		ACTIONS => {
@@ -557,10 +557,10 @@ sub new {
 		}
 	},
 	{#State 49
-		DEFAULT => -81
+		DEFAULT => -85
 	},
 	{#State 50
-		DEFAULT => -82
+		DEFAULT => -86
 	},
 	{#State 51
 		ACTIONS => {
@@ -575,7 +575,7 @@ sub new {
 		}
 	},
 	{#State 52
-		DEFAULT => -86
+		DEFAULT => -90
 	},
 	{#State 53
 		ACTIONS => {
@@ -592,7 +592,7 @@ sub new {
 		}
 	},
 	{#State 54
-		DEFAULT => -84
+		DEFAULT => -88
 	},
 	{#State 55
 		ACTIONS => {
@@ -603,7 +603,7 @@ sub new {
 			"from" => 58,
 			"offset" => 53
 		},
-		DEFAULT => -80,
+		DEFAULT => -84,
 		GOTOS => {
 			'postfix_clause_list' => 109,
 			'order_by_clause' => 46,
@@ -692,19 +692,19 @@ sub new {
 			"^" => 129,
 			"*" => 130
 		},
-		DEFAULT => -46
+		DEFAULT => -50
 	},
 	{#State 65
-		DEFAULT => -122
+		DEFAULT => -127
 	},
 	{#State 66
 		ACTIONS => {
 			"(" => 133
 		},
-		DEFAULT => -75
+		DEFAULT => -79
 	},
 	{#State 67
-		DEFAULT => -59
+		DEFAULT => -63
 	},
 	{#State 68
 		ACTIONS => {
@@ -712,7 +712,7 @@ sub new {
 		}
 	},
 	{#State 69
-		DEFAULT => -58
+		DEFAULT => -62
 	},
 	{#State 70
 		ACTIONS => {
@@ -720,22 +720,22 @@ sub new {
 		}
 	},
 	{#State 71
-		DEFAULT => -121
+		DEFAULT => -126
 	},
 	{#State 72
-		DEFAULT => -56
+		DEFAULT => -60
 	},
 	{#State 73
-		DEFAULT => -60
+		DEFAULT => -64
 	},
 	{#State 74
 		ACTIONS => {
 			"," => 136
 		},
-		DEFAULT => -45
+		DEFAULT => -49
 	},
 	{#State 75
-		DEFAULT => -57
+		DEFAULT => -61
 	},
 	{#State 76
 		ACTIONS => {
@@ -762,25 +762,26 @@ sub new {
 	},
 	{#State 77
 		ACTIONS => {
-			"\@\@" => -77,
-			"<" => -77,
-			"like" => -77,
-			">=" => -77,
-			">>" => -77,
-			"<>" => -77,
-			"<<=" => -77,
+			"\@>" => -81,
+			"\@\@" => -81,
+			"<" => -81,
+			"like" => -81,
+			">=" => -81,
+			">>" => -81,
+			"<>" => -81,
+			"<<=" => -81,
 			"|" => 44,
-			"<=" => -77,
-			"." => -77,
-			">" => -77,
-			">>=" => -77,
-			"in" => -77,
-			"!=" => -77,
-			"is" => -77,
-			"=" => -77,
-			"<<" => -77
+			"<=" => -81,
+			"." => -81,
+			">" => -81,
+			">>=" => -81,
+			"in" => -81,
+			"!=" => -81,
+			"is" => -81,
+			"=" => -81,
+			"<<" => -81
 		},
-		DEFAULT => -66
+		DEFAULT => -70
 	},
 	{#State 78
 		ACTIONS => {
@@ -791,22 +792,22 @@ sub new {
 			"||" => 37,
 			"/" => 38
 		},
-		DEFAULT => -32
+		DEFAULT => -36
 	},
 	{#State 79
-		DEFAULT => -75
+		DEFAULT => -79
 	},
 	{#State 80
-		DEFAULT => -37
+		DEFAULT => -41
 	},
 	{#State 81
 		ACTIONS => {
 			"|" => 138
 		},
-		DEFAULT => -77
+		DEFAULT => -81
 	},
 	{#State 82
-		DEFAULT => -34
+		DEFAULT => -38
 	},
 	{#State 83
 		ACTIONS => {
@@ -817,7 +818,7 @@ sub new {
 			"||" => 37,
 			"/" => 38
 		},
-		DEFAULT => -31
+		DEFAULT => -35
 	},
 	{#State 84
 		ACTIONS => {
@@ -825,7 +826,7 @@ sub new {
 			"^" => 35,
 			"||" => 37
 		},
-		DEFAULT => -30
+		DEFAULT => -34
 	},
 	{#State 85
 		ACTIONS => {
@@ -833,7 +834,7 @@ sub new {
 			"^" => 35,
 			"||" => 37
 		},
-		DEFAULT => -33
+		DEFAULT => -37
 	},
 	{#State 86
 		ACTIONS => {
@@ -841,13 +842,13 @@ sub new {
 			"^" => 35,
 			"||" => 37
 		},
-		DEFAULT => -28
+		DEFAULT => -32
 	},
 	{#State 87
 		ACTIONS => {
 			"::" => 32
 		},
-		DEFAULT => -27
+		DEFAULT => -31
 	},
 	{#State 88
 		ACTIONS => {
@@ -855,89 +856,89 @@ sub new {
 			"^" => 35,
 			"||" => 37
 		},
-		DEFAULT => -29
+		DEFAULT => -33
 	},
 	{#State 89
-		DEFAULT => -78
+		DEFAULT => -82
 	},
 	{#State 90
-		DEFAULT => -24
+		DEFAULT => -28
 	},
 	{#State 91
-		DEFAULT => -74
+		DEFAULT => -78
 	},
 	{#State 92
 		DEFAULT => -11
 	},
 	{#State 93
-		DEFAULT => -35
+		DEFAULT => -39
 	},
 	{#State 94
-		DEFAULT => -22
+		DEFAULT => -26
 	},
 	{#State 95
-		DEFAULT => -76
+		DEFAULT => -80
 	},
 	{#State 96
-		DEFAULT => -71
+		DEFAULT => -75
 	},
 	{#State 97
-		DEFAULT => -69
+		DEFAULT => -73
 	},
 	{#State 98
-		DEFAULT => -68
+		DEFAULT => -72
 	},
 	{#State 99
-		DEFAULT => -135
+		DEFAULT => -140
 	},
 	{#State 100
 		ACTIONS => {
 			"|" => 139
 		},
-		DEFAULT => -66
+		DEFAULT => -70
 	},
 	{#State 101
 		ACTIONS => {
 			"," => 140
 		},
-		DEFAULT => -128
+		DEFAULT => -133
 	},
 	{#State 102
-		DEFAULT => -126
-	},
-	{#State 103
 		DEFAULT => -131
 	},
+	{#State 103
+		DEFAULT => -136
+	},
 	{#State 104
-		DEFAULT => -132
+		DEFAULT => -137
 	},
 	{#State 105
 		ACTIONS => {
 			"desc" => 141,
 			"asc" => 142
 		},
-		DEFAULT => -130,
+		DEFAULT => -135,
 		GOTOS => {
 			'order_by_modifier' => 143
 		}
 	},
 	{#State 106
-		DEFAULT => -123
+		DEFAULT => -128
 	},
 	{#State 107
 		ACTIONS => {
 			"," => 144
 		},
-		DEFAULT => -125
+		DEFAULT => -130
 	},
 	{#State 108
-		DEFAULT => -136
+		DEFAULT => -141
 	},
 	{#State 109
-		DEFAULT => -79
+		DEFAULT => -83
 	},
 	{#State 110
-		DEFAULT => -94
+		DEFAULT => -98
 	},
 	{#State 111
 		ACTIONS => {
@@ -950,40 +951,41 @@ sub new {
 			"||" => 37,
 			"/" => 38
 		},
-		DEFAULT => -97
+		DEFAULT => -101
 	},
 	{#State 112
 		ACTIONS => {
 			"and" => 145
 		},
-		DEFAULT => -92
+		DEFAULT => -96
 	},
 	{#State 113
 		ACTIONS => {
 			"or" => 146
 		},
-		DEFAULT => -90
+		DEFAULT => -94
 	},
 	{#State 114
 		ACTIONS => {
-			"!=" => 156,
-			"<" => 148,
-			"\@\@" => 147,
-			"is" => 157,
-			"like" => 149,
-			"=" => 158,
-			">=" => 150,
-			"<<=" => 159,
-			">>=" => 151,
-			"<<" => 160,
-			"<=" => 161,
-			"in" => 153,
-			">" => 162,
-			">>" => 154,
-			"<>" => 155
+			"\@>" => 147,
+			"<" => 149,
+			"\@\@" => 148,
+			"like" => 150,
+			">=" => 151,
+			">>=" => 152,
+			"in" => 154,
+			"<>" => 156,
+			">>" => 155,
+			"!=" => 157,
+			"is" => 158,
+			"=" => 159,
+			"<<=" => 160,
+			"<<" => 161,
+			"<=" => 162,
+			">" => 163
 		},
 		GOTOS => {
-			'operator' => 152
+			'operator' => 153
 		}
 	},
 	{#State 115
@@ -1006,49 +1008,49 @@ sub new {
 			'qualified_symbol' => 11,
 			'true_number' => 22,
 			'lhs_atom' => 114,
-			'expr' => 163,
+			'expr' => 164,
 			'atom' => 16,
-			'condition' => 164,
+			'condition' => 165,
 			'column' => 17
 		}
 	},
 	{#State 116
-		DEFAULT => -89
+		DEFAULT => -93
 	},
 	{#State 117
 		ACTIONS => {
-			"as" => 165
+			"as" => 166
 		},
-		DEFAULT => -18
+		DEFAULT => -19
 	},
 	{#State 118
 		ACTIONS => {
-			"as" => 166
+			"as" => 167
 		}
 	},
 	{#State 119
-		DEFAULT => -21
+		DEFAULT => -25
 	},
 	{#State 120
 		ACTIONS => {
-			"as" => 167
+			"as" => 168
 		},
-		DEFAULT => -88
+		DEFAULT => -92
 	},
 	{#State 121
-		DEFAULT => -87
+		DEFAULT => -91
 	},
 	{#State 122
 		ACTIONS => {
 			"select" => 4
 		},
 		GOTOS => {
-			'select_stmt' => 168
+			'select_stmt' => 169
 		}
 	},
 	{#State 123
 		ACTIONS => {
-			"," => 169
+			"," => 170
 		},
 		DEFAULT => -15
 	},
@@ -1064,7 +1066,7 @@ sub new {
 			'STRING' => 12
 		},
 		GOTOS => {
-			'expr2' => 170,
+			'expr2' => 171,
 			'symbol' => 18,
 			'true_literal' => 71,
 			'number' => 8,
@@ -1085,33 +1087,10 @@ sub new {
 		},
 		GOTOS => {
 			'symbol' => 80,
-			'type' => 171
+			'type' => 172
 		}
 	},
 	{#State 127
-		ACTIONS => {
-			'NUM' => 13,
-			"(" => 76,
-			'VAR' => 77,
-			'IDENT' => 66,
-			'STRING' => 12
-		},
-		GOTOS => {
-			'expr2' => 172,
-			'symbol' => 18,
-			'true_literal' => 71,
-			'number' => 8,
-			'variable' => 65,
-			'atom2' => 72,
-			'string' => 9,
-			'qualified_symbol' => 11,
-			'true_number' => 73,
-			'literal' => 67,
-			'proc_call2' => 75,
-			'column' => 69
-		}
-	},
-	{#State 128
 		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
@@ -1134,7 +1113,7 @@ sub new {
 			'column' => 69
 		}
 	},
-	{#State 129
+	{#State 128
 		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
@@ -1157,7 +1136,7 @@ sub new {
 			'column' => 69
 		}
 	},
-	{#State 130
+	{#State 129
 		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
@@ -1180,7 +1159,7 @@ sub new {
 			'column' => 69
 		}
 	},
-	{#State 131
+	{#State 130
 		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
@@ -1203,7 +1182,7 @@ sub new {
 			'column' => 69
 		}
 	},
-	{#State 132
+	{#State 131
 		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
@@ -1226,11 +1205,10 @@ sub new {
 			'column' => 69
 		}
 	},
-	{#State 133
+	{#State 132
 		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
-			"*" => 180,
 			'VAR' => 77,
 			'IDENT' => 66,
 			'STRING' => 12
@@ -1239,10 +1217,34 @@ sub new {
 			'expr2' => 178,
 			'symbol' => 18,
 			'true_literal' => 71,
-			'parameter2' => 179,
 			'number' => 8,
 			'variable' => 65,
-			'parameter_list2' => 181,
+			'atom2' => 72,
+			'string' => 9,
+			'qualified_symbol' => 11,
+			'true_number' => 73,
+			'literal' => 67,
+			'proc_call2' => 75,
+			'column' => 69
+		}
+	},
+	{#State 133
+		ACTIONS => {
+			'NUM' => 13,
+			"(" => 76,
+			"*" => 181,
+			'VAR' => 77,
+			'IDENT' => 66,
+			'STRING' => 12
+		},
+		GOTOS => {
+			'expr2' => 179,
+			'symbol' => 18,
+			'true_literal' => 71,
+			'parameter2' => 180,
+			'number' => 8,
+			'variable' => 65,
+			'parameter_list2' => 182,
 			'atom2' => 72,
 			'string' => 9,
 			'qualified_symbol' => 11,
@@ -1253,10 +1255,10 @@ sub new {
 		}
 	},
 	{#State 134
-		DEFAULT => -43
+		DEFAULT => -47
 	},
 	{#State 135
-		DEFAULT => -42
+		DEFAULT => -46
 	},
 	{#State 136
 		ACTIONS => {
@@ -1280,7 +1282,7 @@ sub new {
 			'literal' => 67,
 			'proc_call2' => 75,
 			'column' => 69,
-			'parameter_list' => 182
+			'parameter_list' => 183
 		}
 	},
 	{#State 137
@@ -1293,7 +1295,7 @@ sub new {
 			"%" => 128,
 			"^" => 129,
 			"*" => 130,
-			")" => 183
+			")" => 184
 		}
 	},
 	{#State 138
@@ -1316,20 +1318,20 @@ sub new {
 			'proc_call2' => 104,
 			'symbol' => 18,
 			'order_by_atom' => 105,
-			'order_by_objects' => 184,
+			'order_by_objects' => 185,
 			'column' => 103,
 			'qualified_symbol' => 11,
 			'order_by_object' => 101
 		}
 	},
 	{#State 141
-		DEFAULT => -134
+		DEFAULT => -139
 	},
 	{#State 142
-		DEFAULT => -133
+		DEFAULT => -138
 	},
 	{#State 143
-		DEFAULT => -129
+		DEFAULT => -134
 	},
 	{#State 144
 		ACTIONS => {
@@ -1338,7 +1340,7 @@ sub new {
 		},
 		GOTOS => {
 			'symbol' => 18,
-			'column_list' => 185,
+			'column_list' => 186,
 			'column' => 107,
 			'qualified_symbol' => 11
 		}
@@ -1353,7 +1355,7 @@ sub new {
 		},
 		GOTOS => {
 			'comparison' => 110,
-			'conjunction' => 186,
+			'conjunction' => 187,
 			'true_literal' => 19,
 			'symbol' => 18,
 			'number' => 8,
@@ -1382,7 +1384,7 @@ sub new {
 			'conjunction' => 112,
 			'number' => 8,
 			'string' => 9,
-			'disjunction' => 187,
+			'disjunction' => 188,
 			'proc_call' => 21,
 			'qualified_symbol' => 11,
 			'true_number' => 22,
@@ -1393,31 +1395,34 @@ sub new {
 		}
 	},
 	{#State 147
-		DEFAULT => -111
+		DEFAULT => -116
 	},
 	{#State 148
-		DEFAULT => -106
+		DEFAULT => -115
 	},
 	{#State 149
 		DEFAULT => -110
 	},
 	{#State 150
-		DEFAULT => -104
-	},
-	{#State 151
 		DEFAULT => -114
 	},
+	{#State 151
+		DEFAULT => -108
+	},
 	{#State 152
+		DEFAULT => -119
+	},
+	{#State 153
 		ACTIONS => {
 			'NUM' => 13,
-			"(" => 192,
-			"null" => 191,
+			"(" => 193,
+			"null" => 192,
 			'VAR' => 77,
 			'IDENT' => 66,
 			'STRING' => 12
 		},
 		GOTOS => {
-			'expr2' => 188,
+			'expr2' => 189,
 			'symbol' => 18,
 			'true_literal' => 71,
 			'number' => 8,
@@ -1428,45 +1433,45 @@ sub new {
 			'true_number' => 73,
 			'literal' => 67,
 			'proc_call2' => 75,
-			'rhs_atom' => 189,
-			'subquery' => 190,
+			'rhs_atom' => 190,
+			'subquery' => 191,
 			'column' => 69
 		}
 	},
-	{#State 153
-		DEFAULT => -116
-	},
 	{#State 154
-		DEFAULT => -115
+		DEFAULT => -121
 	},
 	{#State 155
-		DEFAULT => -107
+		DEFAULT => -120
 	},
 	{#State 156
-		DEFAULT => -108
+		DEFAULT => -111
 	},
 	{#State 157
-		ACTIONS => {
-			"not" => 193
-		},
-		DEFAULT => -118
-	},
-	{#State 158
-		DEFAULT => -109
-	},
-	{#State 159
 		DEFAULT => -112
 	},
-	{#State 160
+	{#State 158
+		ACTIONS => {
+			"not" => 194
+		},
+		DEFAULT => -123
+	},
+	{#State 159
 		DEFAULT => -113
 	},
+	{#State 160
+		DEFAULT => -117
+	},
 	{#State 161
-		DEFAULT => -105
+		DEFAULT => -118
 	},
 	{#State 162
-		DEFAULT => -103
+		DEFAULT => -109
 	},
 	{#State 163
+		DEFAULT => -107
+	},
+	{#State 164
 		ACTIONS => {
 			"-" => 31,
 			"::" => 32,
@@ -1478,20 +1483,11 @@ sub new {
 			"||" => 37,
 			"/" => 38
 		},
-		DEFAULT => -97
-	},
-	{#State 164
-		ACTIONS => {
-			")" => 194
-		}
+		DEFAULT => -101
 	},
 	{#State 165
 		ACTIONS => {
-			'VAR' => 81,
-			'IDENT' => 79
-		},
-		GOTOS => {
-			'symbol' => 195
+			")" => 195
 		}
 	},
 	{#State 166
@@ -1514,10 +1510,20 @@ sub new {
 	},
 	{#State 168
 		ACTIONS => {
-			")" => 198
+			"(" => 199,
+			'VAR' => 81,
+			'IDENT' => 79
+		},
+		GOTOS => {
+			'symbol' => 198
 		}
 	},
 	{#State 169
+		ACTIONS => {
+			")" => 200
+		}
+	},
+	{#State 170
 		ACTIONS => {
 			"(" => 122,
 			'VAR' => 81,
@@ -1527,12 +1533,12 @@ sub new {
 			'symbol' => 119,
 			'subquery' => 118,
 			'model' => 117,
-			'proc_call' => 199,
+			'proc_call' => 201,
 			'joined_obj' => 123,
-			'joined_obj_list' => 200
+			'joined_obj_list' => 202
 		}
 	},
-	{#State 170
+	{#State 171
 		ACTIONS => {
 			"::" => 126,
 			"%" => 128,
@@ -1541,29 +1547,21 @@ sub new {
 			"||" => 131,
 			"/" => 132
 		},
-		DEFAULT => -52
-	},
-	{#State 171
-		DEFAULT => -54
+		DEFAULT => -56
 	},
 	{#State 172
-		ACTIONS => {
-			"::" => 126,
-			"%" => 128,
-			"^" => 129,
-			"*" => 130,
-			"||" => 131,
-			"/" => 132
-		},
-		DEFAULT => -51
+		DEFAULT => -58
 	},
 	{#State 173
 		ACTIONS => {
 			"::" => 126,
+			"%" => 128,
 			"^" => 129,
-			"||" => 131
+			"*" => 130,
+			"||" => 131,
+			"/" => 132
 		},
-		DEFAULT => -50
+		DEFAULT => -55
 	},
 	{#State 174
 		ACTIONS => {
@@ -1571,7 +1569,7 @@ sub new {
 			"^" => 129,
 			"||" => 131
 		},
-		DEFAULT => -53
+		DEFAULT => -54
 	},
 	{#State 175
 		ACTIONS => {
@@ -1579,23 +1577,31 @@ sub new {
 			"^" => 129,
 			"||" => 131
 		},
-		DEFAULT => -48
+		DEFAULT => -57
 	},
 	{#State 176
-		ACTIONS => {
-			"::" => 126
-		},
-		DEFAULT => -47
-	},
-	{#State 177
 		ACTIONS => {
 			"::" => 126,
 			"^" => 129,
 			"||" => 131
 		},
-		DEFAULT => -49
+		DEFAULT => -52
+	},
+	{#State 177
+		ACTIONS => {
+			"::" => 126
+		},
+		DEFAULT => -51
 	},
 	{#State 178
+		ACTIONS => {
+			"::" => 126,
+			"^" => 129,
+			"||" => 131
+		},
+		DEFAULT => -53
+	},
+	{#State 179
 		ACTIONS => {
 			"-" => 125,
 			"::" => 126,
@@ -1606,43 +1612,43 @@ sub new {
 			"^" => 129,
 			"*" => 130
 		},
-		DEFAULT => -65
-	},
-	{#State 179
-		ACTIONS => {
-			"," => 201
-		},
-		DEFAULT => -64
+		DEFAULT => -69
 	},
 	{#State 180
 		ACTIONS => {
-			")" => 202
-		}
+			"," => 203
+		},
+		DEFAULT => -68
 	},
 	{#State 181
 		ACTIONS => {
-			")" => 203
+			")" => 204
 		}
 	},
 	{#State 182
-		DEFAULT => -44
+		ACTIONS => {
+			")" => 205
+		}
 	},
 	{#State 183
-		DEFAULT => -55
+		DEFAULT => -48
 	},
 	{#State 184
-		DEFAULT => -127
+		DEFAULT => -59
 	},
 	{#State 185
-		DEFAULT => -124
+		DEFAULT => -132
 	},
 	{#State 186
-		DEFAULT => -93
+		DEFAULT => -129
 	},
 	{#State 187
-		DEFAULT => -91
+		DEFAULT => -97
 	},
 	{#State 188
+		DEFAULT => -95
+	},
+	{#State 189
 		ACTIONS => {
 			"-" => 125,
 			"::" => 126,
@@ -1653,28 +1659,28 @@ sub new {
 			"||" => 131,
 			"/" => 132
 		},
-		DEFAULT => -100
-	},
-	{#State 189
-		DEFAULT => -95
+		DEFAULT => -104
 	},
 	{#State 190
-		DEFAULT => -102
-	},
-	{#State 191
 		DEFAULT => -99
 	},
+	{#State 191
+		DEFAULT => -106
+	},
 	{#State 192
+		DEFAULT => -103
+	},
+	{#State 193
 		ACTIONS => {
 			'NUM' => 13,
-			"(" => 208,
+			"(" => 210,
 			'VAR' => 77,
 			"select" => 4,
-			'IDENT' => 204,
+			'IDENT' => 206,
 			'STRING' => 12
 		},
 		GOTOS => {
-			'select_stmt' => 168,
+			'select_stmt' => 169,
 			'expr2' => 137,
 			'comparison' => 110,
 			'number' => 8,
@@ -1684,59 +1690,68 @@ sub new {
 			'literal' => 67,
 			'expr' => 111,
 			'atom' => 16,
-			'column' => 205,
+			'column' => 207,
 			'conjunction' => 112,
 			'symbol' => 18,
-			'true_literal' => 206,
+			'true_literal' => 208,
 			'atom2' => 72,
 			'disjunction' => 113,
 			'proc_call' => 21,
-			'true_number' => 207,
+			'true_number' => 209,
 			'proc_call2' => 75,
 			'lhs_atom' => 114,
-			'condition' => 209
+			'condition' => 211
 		}
 	},
-	{#State 193
-		DEFAULT => -117
-	},
 	{#State 194
-		ACTIONS => {
-			'' => -96,
-			"or" => -96,
-			"order by" => -96,
-			"limit" => -96,
-			";" => -96,
-			"group by" => -96,
-			"offset" => -96,
-			")" => -96,
-			"where" => -96,
-			"from" => -96,
-			"and" => -96
-		},
-		DEFAULT => -98
+		DEFAULT => -122
 	},
 	{#State 195
-		DEFAULT => -16
+		ACTIONS => {
+			'' => -100,
+			"or" => -100,
+			"limit" => -100,
+			"order by" => -100,
+			";" => -100,
+			"group by" => -100,
+			"offset" => -100,
+			")" => -100,
+			"where" => -100,
+			"from" => -100,
+			"and" => -100
+		},
+		DEFAULT => -102
 	},
 	{#State 196
-		DEFAULT => -19
+		DEFAULT => -16
 	},
 	{#State 197
-		DEFAULT => -17
+		DEFAULT => -20
 	},
 	{#State 198
-		DEFAULT => -20
+		DEFAULT => -18
 	},
 	{#State 199
 		ACTIONS => {
-			"as" => 167
+			'IDENT' => 212
+		},
+		GOTOS => {
+			'col_decl' => 213,
+			'col_decl_list' => 214
 		}
 	},
 	{#State 200
-		DEFAULT => -14
+		DEFAULT => -24
 	},
 	{#State 201
+		ACTIONS => {
+			"as" => 168
+		}
+	},
+	{#State 202
+		DEFAULT => -14
+	},
+	{#State 203
 		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
@@ -1745,13 +1760,13 @@ sub new {
 			'STRING' => 12
 		},
 		GOTOS => {
-			'expr2' => 178,
+			'expr2' => 179,
 			'symbol' => 18,
 			'true_literal' => 71,
-			'parameter2' => 179,
+			'parameter2' => 180,
 			'number' => 8,
 			'variable' => 65,
-			'parameter_list2' => 210,
+			'parameter_list2' => 215,
 			'atom2' => 72,
 			'string' => 9,
 			'qualified_symbol' => 11,
@@ -1761,33 +1776,33 @@ sub new {
 			'column' => 69
 		}
 	},
-	{#State 202
-		DEFAULT => -62
-	},
-	{#State 203
-		DEFAULT => -61
-	},
 	{#State 204
-		ACTIONS => {
-			"(" => 211
-		},
-		DEFAULT => -75
+		DEFAULT => -66
 	},
 	{#State 205
-		DEFAULT => -39
+		DEFAULT => -65
 	},
 	{#State 206
-		DEFAULT => -40
+		ACTIONS => {
+			"(" => 216
+		},
+		DEFAULT => -79
 	},
 	{#State 207
-		DEFAULT => -41
+		DEFAULT => -43
 	},
 	{#State 208
+		DEFAULT => -44
+	},
+	{#State 209
+		DEFAULT => -45
+	},
+	{#State 210
 		ACTIONS => {
 			'NUM' => 13,
-			"(" => 208,
+			"(" => 210,
 			'VAR' => 77,
-			'IDENT' => 204,
+			'IDENT' => 206,
 			'STRING' => 12
 		},
 		GOTOS => {
@@ -1798,46 +1813,62 @@ sub new {
 			'string' => 9,
 			'qualified_symbol' => 11,
 			'literal' => 67,
-			'expr' => 163,
+			'expr' => 164,
 			'atom' => 16,
-			'column' => 205,
+			'column' => 207,
 			'conjunction' => 112,
 			'symbol' => 18,
-			'true_literal' => 206,
+			'true_literal' => 208,
 			'atom2' => 72,
 			'disjunction' => 113,
 			'proc_call' => 21,
-			'true_number' => 207,
+			'true_number' => 209,
 			'proc_call2' => 75,
 			'lhs_atom' => 114,
-			'condition' => 164
+			'condition' => 165
 		}
-	},
-	{#State 209
-		ACTIONS => {
-			")" => 212
-		}
-	},
-	{#State 210
-		DEFAULT => -63
 	},
 	{#State 211
 		ACTIONS => {
+			")" => 217
+		}
+	},
+	{#State 212
+		ACTIONS => {
+			'IDENT' => 218
+		}
+	},
+	{#State 213
+		ACTIONS => {
+			"," => 219
+		},
+		DEFAULT => -22
+	},
+	{#State 214
+		ACTIONS => {
+			")" => 220
+		}
+	},
+	{#State 215
+		DEFAULT => -67
+	},
+	{#State 216
+		ACTIONS => {
 			'NUM' => 13,
 			"(" => 76,
-			"*" => 214,
+			"*" => 222,
 			'VAR' => 77,
 			'IDENT' => 66,
 			'STRING' => 12
 		},
 		GOTOS => {
-			'expr2' => 213,
+			'expr2' => 221,
 			'symbol' => 18,
 			'true_literal' => 71,
-			'parameter2' => 179,
+			'parameter2' => 180,
 			'number' => 8,
 			'variable' => 65,
-			'parameter_list2' => 181,
+			'parameter_list2' => 182,
 			'atom2' => 72,
 			'string' => 9,
 			'qualified_symbol' => 11,
@@ -1849,10 +1880,25 @@ sub new {
 			'column' => 69
 		}
 	},
-	{#State 212
-		DEFAULT => -101
+	{#State 217
+		DEFAULT => -105
 	},
-	{#State 213
+	{#State 218
+		DEFAULT => -23
+	},
+	{#State 219
+		ACTIONS => {
+			'IDENT' => 212
+		},
+		GOTOS => {
+			'col_decl' => 213,
+			'col_decl_list' => 223
+		}
+	},
+	{#State 220
+		DEFAULT => -17
+	},
+	{#State 221
 		ACTIONS => {
 			"-" => 125,
 			"::" => 126,
@@ -1863,15 +1909,18 @@ sub new {
 			"^" => 129,
 			"*" => 130
 		},
-		DEFAULT => -46
+		DEFAULT => -50
 	},
-	{#State 214
+	{#State 222
 		ACTIONS => {
-			")" => 215
+			")" => 224
 		}
 	},
-	{#State 215
-		DEFAULT => -43
+	{#State 223
+		DEFAULT => -21
+	},
+	{#State 224
+		DEFAULT => -47
 	}
 ],
                                   yyrules  =>
@@ -1949,246 +1998,267 @@ sub
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 17
-		 'joined_obj', 3,
+		 'joined_obj', 5,
 sub
 #line 58 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 18
-		 'joined_obj', 1, undef
-	],
-	[#Rule 19
 		 'joined_obj', 3,
 sub
-#line 61 "grammar/restyscript-view.yp"
+#line 60 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
+	[#Rule 19
+		 'joined_obj', 1, undef
+	],
 	[#Rule 20
-		 'subquery', 3,
+		 'joined_obj', 3,
 sub
-#line 65 "grammar/restyscript-view.yp"
+#line 63 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 21
-		 'model', 1,
+		 'col_decl_list', 3,
 sub
-#line 68 "grammar/restyscript-view.yp"
-{ push @Models, $_[1]; $QuoteIdent->($_[1]) }
+#line 67 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 22
-		 'pattern_list', 3,
+		 'col_decl_list', 1, undef
+	],
+	[#Rule 23
+		 'col_decl', 2,
 sub
 #line 72 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
-	[#Rule 23
-		 'pattern_list', 1, undef
-	],
 	[#Rule 24
-		 'pattern', 3,
+		 'subquery', 3,
 sub
-#line 77 "grammar/restyscript-view.yp"
+#line 76 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 25
-		 'pattern', 1, undef
+		 'model', 1,
+sub
+#line 79 "grammar/restyscript-view.yp"
+{ push @Models, $_[1]; $QuoteIdent->($_[1]) }
 	],
 	[#Rule 26
-		 'pattern', 1, undef
-	],
-	[#Rule 27
-		 'expr', 3,
+		 'pattern_list', 3,
 sub
 #line 83 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
+	[#Rule 27
+		 'pattern_list', 1, undef
+	],
 	[#Rule 28
-		 'expr', 3,
+		 'pattern', 3,
 sub
-#line 85 "grammar/restyscript-view.yp"
+#line 88 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 29
-		 'expr', 3,
-sub
-#line 87 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'pattern', 1, undef
 	],
 	[#Rule 30
-		 'expr', 3,
-sub
-#line 89 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'pattern', 1, undef
 	],
 	[#Rule 31
 		 'expr', 3,
 sub
-#line 91 "grammar/restyscript-view.yp"
+#line 94 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 32
 		 'expr', 3,
 sub
-#line 93 "grammar/restyscript-view.yp"
+#line 96 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 33
 		 'expr', 3,
 sub
-#line 95 "grammar/restyscript-view.yp"
+#line 98 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 34
 		 'expr', 3,
 sub
-#line 97 "grammar/restyscript-view.yp"
+#line 100 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 35
 		 'expr', 3,
 sub
-#line 99 "grammar/restyscript-view.yp"
+#line 102 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 36
-		 'expr', 1, undef
+		 'expr', 3,
+sub
+#line 104 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 37
-		 'type', 1, undef
+		 'expr', 3,
+sub
+#line 106 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 38
-		 'atom', 1, undef
+		 'expr', 3,
+sub
+#line 108 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 39
-		 'atom', 1, undef
+		 'expr', 3,
+sub
+#line 110 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 40
-		 'atom', 1, undef
+		 'expr', 1, undef
 	],
 	[#Rule 41
-		 'atom', 1, undef
+		 'type', 1, undef
 	],
 	[#Rule 42
-		 'proc_call', 4,
-sub
-#line 113 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'atom', 1, undef
 	],
 	[#Rule 43
-		 'proc_call', 4,
-sub
-#line 115 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'atom', 1, undef
 	],
 	[#Rule 44
-		 'parameter_list', 3,
-sub
-#line 119 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'atom', 1, undef
 	],
 	[#Rule 45
-		 'parameter_list', 1, undef
+		 'atom', 1, undef
 	],
 	[#Rule 46
-		 'parameter', 1, undef
+		 'proc_call', 4,
+sub
+#line 124 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 47
-		 'expr2', 3,
+		 'proc_call', 4,
 sub
-#line 127 "grammar/restyscript-view.yp"
+#line 126 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 48
-		 'expr2', 3,
+		 'parameter_list', 3,
 sub
-#line 129 "grammar/restyscript-view.yp"
+#line 130 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 49
-		 'expr2', 3,
-sub
-#line 131 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'parameter_list', 1, undef
 	],
 	[#Rule 50
-		 'expr2', 3,
-sub
-#line 133 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'parameter', 1, undef
 	],
 	[#Rule 51
 		 'expr2', 3,
 sub
-#line 135 "grammar/restyscript-view.yp"
+#line 138 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 52
 		 'expr2', 3,
 sub
-#line 137 "grammar/restyscript-view.yp"
+#line 140 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 53
 		 'expr2', 3,
 sub
-#line 139 "grammar/restyscript-view.yp"
+#line 142 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 54
 		 'expr2', 3,
 sub
-#line 141 "grammar/restyscript-view.yp"
+#line 144 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 55
 		 'expr2', 3,
 sub
-#line 143 "grammar/restyscript-view.yp"
+#line 146 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 56
-		 'expr2', 1, undef
+		 'expr2', 3,
+sub
+#line 148 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 57
-		 'atom2', 1, undef
+		 'expr2', 3,
+sub
+#line 150 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 58
-		 'atom2', 1, undef
+		 'expr2', 3,
+sub
+#line 152 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 59
-		 'atom2', 1, undef
-	],
-	[#Rule 60
-		 'atom2', 1, undef
-	],
-	[#Rule 61
-		 'proc_call2', 4,
+		 'expr2', 3,
 sub
 #line 154 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
+	[#Rule 60
+		 'expr2', 1, undef
+	],
+	[#Rule 61
+		 'atom2', 1, undef
+	],
 	[#Rule 62
-		 'proc_call2', 4,
-sub
-#line 156 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'atom2', 1, undef
 	],
 	[#Rule 63
-		 'parameter_list2', 3,
-sub
-#line 160 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'atom2', 1, undef
 	],
 	[#Rule 64
-		 'parameter_list2', 1, undef
+		 'atom2', 1, undef
 	],
 	[#Rule 65
-		 'parameter2', 1, undef
+		 'proc_call2', 4,
+sub
+#line 165 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 66
+		 'proc_call2', 4,
+sub
+#line 167 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
+	],
+	[#Rule 67
+		 'parameter_list2', 3,
+sub
+#line 171 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
+	],
+	[#Rule 68
+		 'parameter_list2', 1, undef
+	],
+	[#Rule 69
+		 'parameter2', 1, undef
+	],
+	[#Rule 70
 		 'variable', 1,
 sub
-#line 169 "grammar/restyscript-view.yp"
+#line 180 "grammar/restyscript-view.yp"
 {
                 push @OutVars, $_[1];
                 my $val = $InVals->{$_[1]};
@@ -2199,16 +2269,16 @@ sub
                 $Quote->($val);
             }
 	],
-	[#Rule 67
+	[#Rule 71
 		 'true_number', 1, undef
 	],
-	[#Rule 68
+	[#Rule 72
 		 'number', 1, undef
 	],
-	[#Rule 69
+	[#Rule 73
 		 'number', 3,
 sub
-#line 185 "grammar/restyscript-view.yp"
+#line 196 "grammar/restyscript-view.yp"
 {
                 push @OutVars, $_[1];
                 my $val = $InVals->{$_[1]};
@@ -2220,16 +2290,16 @@ sub
                 $Quote->($val);
             }
 	],
-	[#Rule 70
+	[#Rule 74
 		 'string', 1,
 sub
-#line 197 "grammar/restyscript-view.yp"
+#line 208 "grammar/restyscript-view.yp"
 { $Quote->(parse_string($_[1])) }
 	],
-	[#Rule 71
+	[#Rule 75
 		 'string', 3,
 sub
-#line 199 "grammar/restyscript-view.yp"
+#line 210 "grammar/restyscript-view.yp"
 { push @OutVars, $_[1];
             my $val = $InVals->{$_[1]};
             if (!defined $val) {
@@ -2240,32 +2310,32 @@ sub
             $Quote->($val);
           }
 	],
-	[#Rule 72
+	[#Rule 76
 		 'column', 1, undef
 	],
-	[#Rule 73
+	[#Rule 77
 		 'column', 1,
 sub
-#line 211 "grammar/restyscript-view.yp"
+#line 222 "grammar/restyscript-view.yp"
 { push @Columns, $_[1]; $QuoteIdent->($_[1]) }
 	],
-	[#Rule 74
+	[#Rule 78
 		 'qualified_symbol', 3,
 sub
-#line 215 "grammar/restyscript-view.yp"
+#line 226 "grammar/restyscript-view.yp"
 {
                       #push @Models, $_[1];
                       push @Columns, $_[3];
                       $QuoteIdent->($_[1]).'.'.$QuoteIdent->($_[3]);
                     }
 	],
-	[#Rule 75
+	[#Rule 79
 		 'symbol', 1, undef
 	],
-	[#Rule 76
+	[#Rule 80
 		 'symbol', 3,
 sub
-#line 224 "grammar/restyscript-view.yp"
+#line 235 "grammar/restyscript-view.yp"
 { push @OutVars, $_[1];
             my $val = $InVals->{$_[1]};
             if (!defined $val) {
@@ -2278,10 +2348,10 @@ sub
             $val;
           }
 	],
-	[#Rule 77
+	[#Rule 81
 		 'symbol', 1,
 sub
-#line 236 "grammar/restyscript-view.yp"
+#line 247 "grammar/restyscript-view.yp"
 { push @OutVars, $_[1];
             my $val = $InVals->{$_[1]};
             if (!defined $val) {
@@ -2293,29 +2363,17 @@ sub
             $val;
           }
 	],
-	[#Rule 78
+	[#Rule 82
 		 'alias', 1, undef
 	],
-	[#Rule 79
+	[#Rule 83
 		 'postfix_clause_list', 2,
 sub
-#line 252 "grammar/restyscript-view.yp"
+#line 263 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
-	[#Rule 80
-		 'postfix_clause_list', 1, undef
-	],
-	[#Rule 81
-		 'postfix_clause', 1, undef
-	],
-	[#Rule 82
-		 'postfix_clause', 1, undef
-	],
-	[#Rule 83
-		 'postfix_clause', 1, undef
-	],
 	[#Rule 84
-		 'postfix_clause', 1, undef
+		 'postfix_clause_list', 1, undef
 	],
 	[#Rule 85
 		 'postfix_clause', 1, undef
@@ -2324,91 +2382,91 @@ sub
 		 'postfix_clause', 1, undef
 	],
 	[#Rule 87
-		 'from_clause', 2,
-sub
-#line 265 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'postfix_clause', 1, undef
 	],
 	[#Rule 88
-		 'from_clause', 2,
-sub
-#line 267 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'postfix_clause', 1, undef
 	],
 	[#Rule 89
-		 'where_clause', 2,
-sub
-#line 271 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'postfix_clause', 1, undef
 	],
 	[#Rule 90
-		 'condition', 1, undef
+		 'postfix_clause', 1, undef
 	],
 	[#Rule 91
-		 'disjunction', 3,
+		 'from_clause', 2,
+sub
+#line 276 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
+	],
+	[#Rule 92
+		 'from_clause', 2,
 sub
 #line 278 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
-	[#Rule 92
-		 'disjunction', 1, undef
-	],
 	[#Rule 93
-		 'conjunction', 3,
+		 'where_clause', 2,
 sub
-#line 283 "grammar/restyscript-view.yp"
+#line 282 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 94
-		 'conjunction', 1, undef
+		 'condition', 1, undef
 	],
 	[#Rule 95
-		 'comparison', 3,
+		 'disjunction', 3,
 sub
-#line 288 "grammar/restyscript-view.yp"
+#line 289 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 96
-		 'comparison', 3,
-sub
-#line 290 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'disjunction', 1, undef
 	],
 	[#Rule 97
-		 'lhs_atom', 1, undef
-	],
-	[#Rule 98
-		 'lhs_atom', 3,
+		 'conjunction', 3,
 sub
-#line 295 "grammar/restyscript-view.yp"
+#line 294 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
+	[#Rule 98
+		 'conjunction', 1, undef
+	],
 	[#Rule 99
-		 'rhs_atom', 1, undef
+		 'comparison', 3,
+sub
+#line 299 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 100
-		 'rhs_atom', 1, undef
-	],
-	[#Rule 101
-		 'rhs_atom', 3,
+		 'comparison', 3,
 sub
 #line 301 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
+	[#Rule 101
+		 'lhs_atom', 1, undef
+	],
 	[#Rule 102
-		 'rhs_atom', 1, undef
+		 'lhs_atom', 3,
+sub
+#line 306 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 103
-		 'operator', 1, undef
+		 'rhs_atom', 1, undef
 	],
 	[#Rule 104
-		 'operator', 1, undef
+		 'rhs_atom', 1, undef
 	],
 	[#Rule 105
-		 'operator', 1, undef
+		 'rhs_atom', 3,
+sub
+#line 312 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 106
-		 'operator', 1, undef
+		 'rhs_atom', 1, undef
 	],
 	[#Rule 107
 		 'operator', 1, undef
@@ -2441,87 +2499,102 @@ sub
 		 'operator', 1, undef
 	],
 	[#Rule 117
-		 'operator', 2,
-sub
-#line 320 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'operator', 1, undef
 	],
 	[#Rule 118
 		 'operator', 1, undef
 	],
 	[#Rule 119
-		 'true_literal', 1, undef
+		 'operator', 1, undef
 	],
 	[#Rule 120
-		 'true_literal', 1, undef
+		 'operator', 1, undef
 	],
 	[#Rule 121
-		 'literal', 1, undef
+		 'operator', 1, undef
 	],
 	[#Rule 122
-		 'literal', 1, undef
+		 'operator', 2,
+sub
+#line 332 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 123
-		 'group_by_clause', 2,
-sub
-#line 334 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'operator', 1, undef
 	],
 	[#Rule 124
-		 'column_list', 3,
-sub
-#line 338 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'true_literal', 1, undef
 	],
 	[#Rule 125
-		 'column_list', 1, undef
+		 'true_literal', 1, undef
 	],
 	[#Rule 126
-		 'order_by_clause', 2,
-sub
-#line 343 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'literal', 1, undef
 	],
 	[#Rule 127
-		 'order_by_objects', 3,
-sub
-#line 347 "grammar/restyscript-view.yp"
-{ join(' ', @_[1..$#_]) }
+		 'literal', 1, undef
 	],
 	[#Rule 128
-		 'order_by_objects', 1, undef
+		 'group_by_clause', 2,
+sub
+#line 346 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 129
-		 'order_by_object', 2,
+		 'column_list', 3,
 sub
-#line 352 "grammar/restyscript-view.yp"
+#line 350 "grammar/restyscript-view.yp"
 { join(' ', @_[1..$#_]) }
 	],
 	[#Rule 130
-		 'order_by_object', 1, undef
+		 'column_list', 1, undef
 	],
 	[#Rule 131
-		 'order_by_atom', 1, undef
+		 'order_by_clause', 2,
+sub
+#line 355 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 132
-		 'order_by_atom', 1, undef
+		 'order_by_objects', 3,
+sub
+#line 359 "grammar/restyscript-view.yp"
+{ join(' ', @_[1..$#_]) }
 	],
 	[#Rule 133
-		 'order_by_modifier', 1, undef
+		 'order_by_objects', 1, undef
 	],
 	[#Rule 134
-		 'order_by_modifier', 1, undef
-	],
-	[#Rule 135
-		 'limit_clause', 2,
+		 'order_by_object', 2,
 sub
 #line 364 "grammar/restyscript-view.yp"
-{ delete $_[0]->YYData->{limit}; join(' ', @_[1..$#_]) }
+{ join(' ', @_[1..$#_]) }
+	],
+	[#Rule 135
+		 'order_by_object', 1, undef
 	],
 	[#Rule 136
+		 'order_by_atom', 1, undef
+	],
+	[#Rule 137
+		 'order_by_atom', 1, undef
+	],
+	[#Rule 138
+		 'order_by_modifier', 1, undef
+	],
+	[#Rule 139
+		 'order_by_modifier', 1, undef
+	],
+	[#Rule 140
+		 'limit_clause', 2,
+sub
+#line 376 "grammar/restyscript-view.yp"
+{ delete $_[0]->YYData->{limit}; join(' ', @_[1..$#_]) }
+	],
+	[#Rule 141
 		 'offset_clause', 2,
 sub
-#line 368 "grammar/restyscript-view.yp"
+#line 380 "grammar/restyscript-view.yp"
 { delete $_[0]->YYData->{offset}; join(' ', @_[1..$#_]) }
 	]
 ],
@@ -2529,7 +2602,7 @@ sub
     bless($self,$class);
 }
 
-#line 371 "grammar/restyscript-view.yp"
+#line 383 "grammar/restyscript-view.yp"
 
 
 #use Smart::Comments '####';
@@ -2591,7 +2664,7 @@ sub _Lexer {
             (my $token = $s) =~ s/\s+/ /gs;
             return (lc($token), lc($s));
         }
-        s/^\s*(<<=|<<|>>=|>>|<=|>=|<>|!=|\|\||::|\blike\b|\bin\b|\@\@)//s
+        s/^\s*(<<=|<<|>>=|>>|<=|>=|<>|!=|\|\||::|\blike\b|\bin\b|\@[>\@])//s
                 and return (lc($1), lc($1));
         s/^\s*([A-Za-z][A-Za-z0-9_]*)\b//s
                 and return ('IDENT', $1);

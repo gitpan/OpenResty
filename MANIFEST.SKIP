@@ -38,6 +38,7 @@ bin/.*\.dat
 ^demo/Admin/JSON\.js$
 ^demo/Blog/out
 ^demo/Blog/script/upload
+^demo/Blog/script/import-local
 ^demo/Blog2/out
 ^demo/Blog/backup
 ^demo/Blog2/js
@@ -58,6 +59,9 @@ bin/.*\.dat
 ^demo/Springbot/staff/staff.csv
 ^demo/Springbot/staff/staff.html
 ^demo/Springbot/staff/staff.txt
+^haskell/bin/x$
+^haskell/bin/x\.c$
+RD_TRACE
 ^t/30-action\.t$
 ^t/31-action\.t$
 demo/Blog/doc/a\.png$
@@ -91,4 +95,4 @@ agentzh-live\.json$
 ^YisouComments.*\.yml
 ^t/25-filter\.t$
 ^ChangeLogs$
-
+^bin/test-account.sh

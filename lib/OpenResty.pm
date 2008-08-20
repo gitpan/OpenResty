@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.003020';
+our $VERSION = '0.003021';
 
 use strict;
 use warnings;
@@ -14,8 +14,9 @@ use Compress::Zlib;
 use List::Util qw(first);
 use Params::Util qw(_HASH _STRING _ARRAY0 _ARRAY _SCALAR);
 use Encode qw(from_to encode decode);
-use Data::Structure::Util qw( _utf8_off );
+use Data::Structure::Util qw( _utf8_on _utf8_off );
 use DBI;
+use OpenResty::QuasiQuote::SQL;
 
 use OpenResty::SQL::Select;
 use OpenResty::SQL::Update;
@@ -61,8 +62,8 @@ our %OpMap = (
 our %ext2dumper = (
     '.yml' => \&YAML::Syck::Dump,
     '.yaml' => \&YAML::Syck::Dump,
-    '.js' => sub { $JsonXs->encode($_[0]) },
-    '.json' => sub { $JsonXs->encode($_[0]) },
+    '.js' => sub { _utf8_on($_[0]); $JsonXs->encode($_[0]) },
+    '.json' => sub { _utf8_on($_[0]); $JsonXs->encode($_[0]) },
 );
 
 our %EncodingMap = (
@@ -433,7 +434,7 @@ sub current_user_can {
     my @urls = $bits;
     my $role = $self->{_role};
     my $max_i = @$bits - 1;
-    while ($max_i >= 1) {
+    while ($max_i >= 0) {
         my @last_bits = @{ $urls[-1] };
         if ($last_bits[$max_i] ne '~') {
             $last_bits[$max_i] = '~';
@@ -441,9 +442,11 @@ sub current_user_can {
         }
     } continue { $max_i-- }
     map { $_ = '/=/' . join '/', @$_ } @urls;
-    my $or_clause = join ' or ', map { "url = ".Q($_) } @urls;
-    my $sql = "select count(*) from _access where role = ".
-        Q($role) . " and method = " . Q($meth) . " and ($or_clause);";
+    my $or_clause = join ' or ', map { [:sql| url = $_ |] } @urls;
+    my $sql = [:sql|
+        select count(*)
+        from _access
+        where role = $role and method = $meth and ( |] . "$or_clause);";
     ### $sql
     my $res = $self->select($sql);
     return do { $res->[0][0] };
@@ -453,13 +456,14 @@ sub has_feed {
     my ($self, $feed) = @_;
 
     _IDENT($feed) or die "Bad feed name: $feed\n";
-
-    my $select = OpenResty::SQL::Select->new('id')
-        ->from('_feeds')
-        ->where(name => Q($feed))
-        ->limit(1);
+    my $sql = [:sql|
+        select id
+        from _feeds
+        where name = $feed
+        limit 1;
+    |];
     my $ret;
-    eval { $ret = $self->select("$select")->[0][0]; };
+    eval { $ret = $self->select($sql)->[0][0]; };
     return $ret;
 }
 
@@ -475,13 +479,16 @@ sub has_role {
         return $login_meth;
     }
 
-    my $select = OpenResty::SQL::Select->new('login')
-        ->from('_roles')
-        ->where(name => Q($role))
-        ->limit(1);
+    my $sql = [:sql|
+        select login
+        from _roles
+        where name = $role
+        limit 1;
+    |];
     my $ret;
-    eval { $ret = $self->select("$select")->[0][0]; };
+    eval { $ret = $self->select($sql)->[0][0]; };
     if ($ret) { $Cache->set_has_role($user, $role, $ret) }
+    #warn "HERE!";
     return $ret;
 }
 
@@ -496,12 +503,14 @@ sub has_view {
         return 1;
     }
     #warn "HERE!!! has_view: $view";
-    my $select = OpenResty::SQL::Select->new('id')
-        ->from('_views')
-        ->where(name => Q($view))
-        ->limit(1);
+    my $sql = [:sql|
+        select id
+        from _views
+        where name = $view
+        limit 1;
+    |];
     my $ret;
-    eval { $ret = $self->select("$select")->[0][0]; };
+    eval { $ret = $self->select($sql)->[0][0]; };
     if ($ret) { $Cache->set_has_view($user, $view) }
     return $ret;
 }
@@ -509,17 +518,20 @@ sub has_view {
 sub has_model {
     my ($self, $model) = @_;
     my $user = $self->current_user;
-    _IDENT($model) or die "Bad model name: $model\n";
+
+   _IDENT($model) or die "Bad model name: $model\n";
     if ($Cache->get_has_model($user, $model)) {
         #warn "has model cache HIT\n";
         return 1;
     }
-    my $select = OpenResty::SQL::Select->new('id')
-        ->from('_models')
-        ->where(name => Q($model))
-        ->limit(1);
+    my $sql = [:sql|
+        select id
+        from _models
+        where name = $model
+        limit 1;
+    |];
     my $ret;
-    eval { $ret = $self->select("$select")->[0][0]; };
+    eval { $ret = $self->select($sql)->[0][0]; };
     if ($ret) { $Cache->set_has_model($user, $model) }
     return $ret;
 }
@@ -604,7 +616,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.20 released on July 31, 2008.
+This document describes OpenResty 0.3.21 released on August 20, 2008.
 
 =head1 DESCRIPTION
 
@@ -709,7 +721,7 @@ This library is still in the B<beta> phase and the API is still in flux. We're j
 
 =head1 INSTALLATION
 
-Please see L<OpenResty::Spec::Installation> for details :)
+Please see L<OpenResty::Spec::Install> for details :)
 
 =head1 SOURCE TREE STRUCTURE
 

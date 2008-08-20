@@ -1,5 +1,6 @@
 [%- IF ! pack_js;
         js_files = [
+            'dojo.openresty.js',
             'openresty.js',
             'md5.js',
             'jquery.js',

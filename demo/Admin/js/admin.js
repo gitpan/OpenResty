@@ -184,20 +184,23 @@ function init () {
     getVersionInfo();
 }
 
-function getModelRows (name, page) {
+function getModelRows (name, page, pat) {
     setStatus(true, 'renderModelRows');
     if (!page) page = 1;
-    openresty.callback = function (res) { renderModelRows(res, name, page); };
+    openresty.callback = function (res) { renderModelRows(res, name, page, pat); };
+    if (/\%[A-Za-z0-9]{2}/.test(pat)) {
+        pat = decodeURIComponent(pat);
+    }
     openresty.get(
-        '/=/model/' + name + '/~/~',
-        { _offset: itemsPerPage * (page - 1), _count: itemsPerPage, _order_by: 'id:desc' }
+        '/=/model/' + name + '/~/' + pat,
+        { _offset: itemsPerPage * (page - 1), _count: itemsPerPage, _order_by: 'id:desc', _op: 'contains' }
     );
 }
 
-function getPager (name, page, prefix) {
+function getPager (name, page, prefix, suffix) {
     setStatus(true, 'getPager');
     openresty.callback = function (res) {
-        renderPager(res, page, prefix);
+        renderPager(res, page, prefix, suffix);
     };
     openresty.postByGet(
         '/=/action/RunView/~/~',
@@ -205,7 +208,8 @@ function getPager (name, page, prefix) {
     );
 }
 
-function renderPager (res, page, prefix) {
+function renderPager (res, page, prefix, suffix) {
+    //alert("Render pager: " + JSON.stringify(res));
     setStatus(false, 'getPager');
     if (!openresty.isSuccess(res)) {
         error("Failed to get the pager: " + res.error);
@@ -218,7 +222,7 @@ function renderPager (res, page, prefix) {
     if (pageCount < 2) return;
     var html = Jemplate.process(
         'pager.tt',
-        { page: page, page_count: pageCount, prefix: prefix }
+        { page: page, page_count: pageCount, prefix: prefix, suffix: suffix }
     );
     //alert("HTML: " + html);
     // we use the .each hack here to work aound a JS runtime error in IE 6:
@@ -230,7 +234,7 @@ function renderPager (res, page, prefix) {
 //////////////////////////////////////////////////////////////////////
 // static handlers (others can be found in template/js/handlers.tt)
 
-function renderModelRows (res, model, page) {
+function renderModelRows (res, model, page, pat) {
     setStatus(false, 'renderModelRows');
     if (!openresty.isSuccess(res)) {
         error("Failed to get model rows: " + res.error);
@@ -242,10 +246,10 @@ function renderModelRows (res, model, page) {
     $("#main").html(
         Jemplate.process(
             'model-rows.tt',
-            { model: model, rows: res }
+            { model: model, rows: res, pat: pat }
         )
     ).postprocess();
-    getPager(model, page, 'modelrows-' + model);
+    getPager(model, page, 'modelrows/' + model + '/', '/' + pat);
 }
 
 function getRoleRules (name) {
@@ -357,6 +361,24 @@ function afterDeleteRoleRule (res, role, id, nextPage) {
         return;
     }
     gotoNextPage(nextPage);
+}
+
+function searchRows () {
+    var pat = $("#search-box-input").val();
+    if (!pat) pat = '~';
+    var anchor = savedAnchor;
+    var matches = anchor.match(/^modelrows\/(\w+)\/\d+\/(.*)$/);
+    if (matches) {
+        var model = matches[1];
+        anchor = 'modelrows/' + model + '/1/' + pat;
+    } else {
+        matches = anchor.match(/^modelrows\/\w+\/\d+$/);
+        if (matches)
+            anchor += '/' + pat;
+        else
+            return;
+    }
+    gotoNextPage(anchor);
 }
 
 function gotoNextPage (nextPage) {
@@ -590,6 +612,68 @@ function afterCreateACLRule (res) {
     } else {
         gotoNextPage();
     }
+}
+
+function deleteAllModelRows (model) {
+    //alert("No implemented yet!");
+    if (confirm("Are you sure to remove all the rows in model \""
+                + model + "\"?")) {
+        openresty.callback = afterDeleteAllModelRows;
+        openresty.del("/=/model/" + model + "/~/~");
+    }
+}
+
+function afterDeleteAllModelRows (res) {
+    alert(JSON.stringify(res));
+    gotoNextPage();
+}
+
+function getModelBulkRowForm (model) {
+    $("#new-row").html(
+        Jemplate.process(
+            'create-bulk-row.tt',
+            { model: model }
+        )
+    );
+}
+
+function createModelBulkRow (model) {
+    var data = $("form#create-row-bulk-form>textarea").val();
+    //alert(data);
+    if (!data) { alert("No lines found!"); return; }
+    var lines = data.split(/\n/);
+    var resLines = [];
+    for (var i = 0; i < lines.length; i++) {
+        value = lines[i];
+        if (/^\s*$/.test(value)) continue;
+        var res = JSON.parse(value);
+        if (res == false && typeof res == typeof false && value != false) {
+            error("Invalid JSON value for line " + (i+1) + ": " + value);
+            return false;
+        }
+        resLines.push(value);
+    }
+    var json = "[" + resLines.join(",") + "]";
+    //alert(json);
+    setStatus(true, 'createModelBulkRow');
+    openresty.formId = 'dummy-form';
+    openresty.callback = afterCreateModelBulkRow;
+    openresty.post("/=/model/" + model + "/~/~", JSON.parse(json));
+    //alert("HERE! ;)");
+    return false;
+}
+
+function afterCreateModelBulkRow (res) {
+    //alert("HERE!");
+    setStatus(false, 'createModelBulkRow');
+    if (openresty.isSuccess(res)) {
+        $("form#create-row-bulk-form>textarea").val('');
+        gotoNextPage();
+    } else {
+        alert("Failed to import: " + res.error);
+    }
+    //$("#import-results").html(JSON.stringify(res));
+    //alert(JSON.stringify(res));
 }
 
 function getModelRowForm (model) {
