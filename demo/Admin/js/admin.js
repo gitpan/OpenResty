@@ -18,6 +18,7 @@ $.fn.postprocess = function (className, options) {
         //debug("Anchor: " + anchor);
         $(this).click( function () {
             //debug(location.hash);
+            $(".location-anchor")[0].id = anchor;
             location.hash = anchor;
             //alert(location.hash);
             if (savedAnchor == anchor) savedAnchor = null;
@@ -30,7 +31,7 @@ $.fn.postprocess = function (className, options) {
                 var data = $(this).attr('resty_value');
                 var type = $(this).attr('resty_type');
                 //debug(type);
-                if ((data && data.length > 128) || /\n.*?\n/.test(data)) {
+                if ((data && data.length > 128) || /\n/.test(data)) {
                     type = 'textarea';
                 }
                 if (!type) type = 'text';
@@ -38,6 +39,8 @@ $.fn.postprocess = function (className, options) {
                     //debug("found textarea!");
                     settings.width = 600;
                     settings.height = 200;
+                } else {
+                    settings.width = '15em';
                 }
                 settings.data = data;
                 settings.type = type;
@@ -67,7 +70,8 @@ function plantEditableHook (node, settings) {
         //debug("PUT /=/" + path + " " + JSON.stringify(data));
         setStatus(true, 'editInplace');
         openresty.callback = afterEditInplace;
-        openresty.putByGet('/=/' + path, data);
+        openresty.formId = 'dummy-form';
+        openresty.put('/=/' + path, data);
         return '<span class="loading-field"><img src="loading.gif/>&nbsp;Loading...</span>';
     }, {
         type: settings.type || 'text',
@@ -292,7 +296,7 @@ function renderVersionInfo (res) {
        .replace(/</, '&lt;')
        .replace(/>/, '&gt;')
        .replace(/"/, '&quot;')
-       .replace(/\n/, '<br/>')
+       .replace(/\n.*/, '')
        .replace(/\(c\)/, '©');
     $("#copyright").html(res);
 }
@@ -392,6 +396,11 @@ function addNewColumn (model) {
     $("li.add-col").html(
         '<form onsubmit="return false;">' + Jemplate.process('column-inputs.tt') + '<input class="column-create-button" type="submit" value="Create" onclick="createColumn(\'' + model + '\')"></input></form>'
     );
+    setTimeout( function () {
+        //alert($('.column-input-name:last').length);
+        $('.column-input-name:last')[0].focus();
+        //$('column-input :last')[0].focus();
+    }, 0 );
 }
 
 function createColumn (model) {
@@ -426,10 +435,19 @@ function afterCreateColumn (res) {
     }
 }
 
+/* in create model */
 function addOneMoreColumn () {
+    //debug("HERE!");
     $("#create-model-columns").append(
-        '<tr><td><span class="column-inputs">' + Jemplate.process('column-inputs.tt') + "</span></td></tr>"
+        '<table><tr><td><span class="column-inputs">' + Jemplate.process('column-inputs.tt') + "</span></td></tr></table>"
     );
+    //alert("HERE!");
+        //alert("HERE!");
+    setTimeout( function () {
+        //alert($('.column-input-name:last').length);
+        $('.column-input-name:last')[0].focus();
+        //$('column-input :last')[0].focus();
+    }, 0 );
 }
 
 function createModel () {
@@ -596,12 +614,13 @@ function afterCreateRole (res) {
 function createACLRule (role) {
     var method = $("#create-rule-method").val();
     var url = $("#create-rule-url").val();
+    var prohibiting = $("#create-rule-prohibiting").val();
     setStatus(true, "createACLRule");
+    var data = { method: method, url: url };
+    if (prohibiting == "true")
+        data.prohibiting = true;
     openresty.callback = afterCreateACLRule;
-    openresty.postByGet(
-        '/=/role/' + role + '/~/~',
-        { method: method, url: url }
-    );
+    openresty.postByGet('/=/role/' + role + '/~/~', data);
     return false;
 }
 
@@ -728,7 +747,8 @@ function createModelRow (model) {
     }
     setStatus(true, 'createModelRow');
     openresty.callback = afterCreateModelRow;
-    openresty.postByGet(
+    openresty.formId = 'dummy-form';
+    openresty.post(
         '/=/model/' + model + '/~/~',
         data
     );

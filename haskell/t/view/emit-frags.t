@@ -448,10 +448,18 @@ select * from Post order by $col
 ["select * from \"Post\" order by ",["col","symbol"]," asc"]
 
 
-=== TEST 52: order by a var with the dir also being a var
+
+=== TEST 53: order by a var with the dir also being a var
 --- in
 select * from Post order by $col $dir
 --- out
 ["select * from \"Post\" order by ",["col","symbol"]," ",["dir","keyword"]]
 
+
+
+=== TEST 54: as (col1 type1, col2 type2, ...)
+--- in
+select * from getquery($spell) as (query text, pop integer, des text) limit $t;
+--- out
+["select * from \"getquery\"(",["spell","unknown"],") as (\"query\" text, \"pop\" integer, \"des\" text) limit ",["t","literal"]]
 

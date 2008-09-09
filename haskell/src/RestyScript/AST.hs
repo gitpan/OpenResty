@@ -20,6 +20,7 @@ data RSVal = SetOp !String !RSVal !RSVal
            | Column !RSVal
            | Model !RSVal
            | Symbol !String
+           | Type !String
            | Keyword !String  -- for asc and desc
            | QualifiedColumn !RSVal !RSVal
            | Integer !Int
@@ -50,6 +51,7 @@ data RSVal = SetOp !String !RSVal !RSVal
            | All ![RSVal]
            | RSTrue
            | RSFalse
+           | Capture [(RSVal, RSVal)]
                deriving (Eq, Show)
 
 traverse :: (RSVal->a) -> (a->a->a) -> RSVal -> a
@@ -103,10 +105,13 @@ traverse visit merge node =
         Float _ -> cur
         Integer _ -> cur
         Symbol _ -> cur
+        Type _ -> cur
         Keyword _ -> cur
         RSTrue -> cur
         RSFalse -> cur
         All _ -> cur
         Distinct _ -> cur
+        Capture sig -> mergeAll $ cur : map aux sig
+            where aux (a, b) = merge (self a) (self b)
         -- otherwise -> cur
 

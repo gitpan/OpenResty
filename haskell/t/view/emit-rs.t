@@ -654,3 +654,29 @@ select $foo , $foo$hello$foo$ from Post
 --- out
 select $foo, 'hello' from "Post"
 
+
+
+=== TEST 70: Test @>
+--- in
+select * from A where a @> 'hello'
+--- out
+select * from "A" where "a" @> 'hello'
+
+
+
+=== TEST 71: Test @<
+--- in
+select * from A where a @< 'hello'
+--- out
+select * from "A" where "a" @< 'hello'
+
+
+
+=== TEST 72: as (col1 type1, col2 type2, ...)
+--- in
+select * from getquery($spell) as (query text, pop integer, des text) limit $t;
+--- ast
+Query [Select [AnyColumn],From [Alias (FuncCall (Symbol "getquery") [Variable (1,25) "spell"]) (Capture [(Symbol "query",Type "text"),(Symbol "pop",Type "integer"),(Symbol "des",Type "text")])],Limit (Variable (1,78) "t")]
+--- out
+select * from "getquery"($spell) as ("query" text, "pop" integer, "des" text) limit $t
+

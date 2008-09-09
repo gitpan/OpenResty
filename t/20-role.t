@@ -131,7 +131,7 @@ GET /=/role/Public/~/~
 POST /=/role/Public/~/~
 {"method":"GET","url":"/=/model"}
 --- response_like
-{"last_row":"/=/role/Public/id/\d+","rows_affected":1,"success":1}
+"success":1
 
 
 
@@ -153,10 +153,10 @@ POST /=/role/Public/~/~
 GET /=/role/Public/~/~
 --- response_like
 \[
-    \{"id":"\d+","method":"GET","url":"/=/model"},
-    \{"id":"\d+","method":"POST","url":"/=/model/~"},
-    \{"id":"\d+","method":"POST","url":"/=/model/A/~/~"},
-    \{"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"}
+    \{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    \{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/~"},
+    \{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"},
+    \{"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"}
 \]
 
 
@@ -166,17 +166,17 @@ GET /=/role/Public/~/~
 GET /=/role/Public/method/~
 --- response_like
 \[
-    \{"id":"\d+","method":"GET","url":"/=/model"},
-    \{"id":"\d+","method":"POST","url":"/=/model/~"},
-    \{"id":"\d+","method":"POST","url":"/=/model/A/~/~"},
-    \{"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"}
+    \{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    \{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/~"},
+    \{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"},
+    \{"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"}
 \]
 
 
 
 === TEST 17: Query by method value
 --- request
-GET /=/role/Public/method//=/model
+GET /=/role/Public/method/model
 --- response
 []
 
@@ -184,9 +184,9 @@ GET /=/role/Public/method//=/model
 
 === TEST 18: Query by method value (don't specify col)
 --- request
-GET /=/role/Public/~//=/model
+GET /=/role/Public/~/model
 --- response_like
-\[{"id":"\d+","method":"GET","url":"/=/model"}\]
+\[{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/~"}\]
 
 
 
@@ -195,10 +195,10 @@ GET /=/role/Public/~//=/model
 GET /=/role/Public/~/model?op=contains
 --- response_like
 \[
-    \{"id":"\d+","method":"GET","url":"/=/model"},
-    \{"id":"\d+","method":"POST","url":"/=/model/~"},
-    \{"id":"\d+","method":"POST","url":"/=/model/A/~/~"},
-    \{"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"}
+    \{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    \{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/~"},
+    \{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"},
+    \{"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"}
 \]
 
 
@@ -208,8 +208,8 @@ GET /=/role/Public/~/model?op=contains
 GET /=/role/Public/url/A?op=contains
 --- response_like
 \[
-    \{"id":"\d+","method":"POST","url":"/=/model/A/~/~"},
-    \{"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"}
+    \{"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"},
+    \{"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"}
 \]
 
 
@@ -218,7 +218,7 @@ GET /=/role/Public/url/A?op=contains
 --- request
 GET /=/role/Public/method/GET
 --- response_like
-\[{"id":"\d+","method":"GET","url":"/=/model"}\]
+\[{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"}\]
 
 
 
@@ -227,8 +227,8 @@ GET /=/role/Public/method/GET
 GET /=/role/Public/method/POST
 --- response_like
 \[
-    {"id":"\d+","method":"POST","url":"/=/model/~"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/~"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]
 
 
@@ -238,8 +238,8 @@ GET /=/role/Public/method/POST
 GET /=/role/Public/~/POST
 --- response_like
 \[
-    {"id":"\d+","method":"POST","url":"/=/model/~"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/~"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]
 
 
@@ -613,8 +613,8 @@ POST /=/role/Poster/~/~
 GET /=/role/Poster/~/~
 --- response_like
 ^\[
-    {"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]$
 
 
@@ -757,10 +757,10 @@ GET /=/role/Public
 GET /=/role/Public/~/~
 --- response_like
 \[
-    \{"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"POST","url":"/=/model/~"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"},
-    {"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"}
+    \{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/~"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"},
+    {"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"}
 \]
 
 
@@ -778,8 +778,8 @@ DELETE /=/role/Public/method/POST
 GET /=/role/Public/~/~
 --- response_like
 \[
-    \{"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"}
+    \{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"}
 \]
 
 
@@ -807,8 +807,8 @@ PUT /=/role/Public/method/GET
 GET /=/role/Public/~/~
 --- response_like
 \[
-    {"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"},
-    {"id":"\d+","method":"GET","url":"/=/model/A/~"}
+    {"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"},
+    {"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model/A/~"}
 ]
 
 
@@ -827,8 +827,8 @@ PUT /=/role/Public/method/GET
 GET /=/role/Public/~/~
 --- response_like
 \[
-    {"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~"}
+    {"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~"}
 ]
 
 
@@ -847,8 +847,8 @@ PUT /=/role/Public/method/POST
 GET /=/role/Public/~/~
 --- response_like
 \[
-    {"id":"\d+","method":"DELETE","url":"/=/model/A/id/~"},
-    \{"id":"\d+","method":"GET","url":"/=/model"}
+    {"id":"\d+","method":"DELETE","prohibiting":false,"url":"/=/model/A/id/~"},
+    \{"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"}
 \]
 
 
@@ -905,8 +905,8 @@ POST /=/role/Poster/~/~
 GET /=/role/Poster/~/~
 --- response_like
 ^\[
-    {"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]$
 
 
@@ -963,8 +963,8 @@ GET /=/role/Newposter
 GET /=/role/Newposter/~/~
 --- response_like
 ^\[
-    {"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]$
 
 
@@ -1029,8 +1029,8 @@ GET /=/role/Newname
 GET /=/role/Newname/~/~
 --- response_like
 ^\[
-    {"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]$
 
 
@@ -1094,8 +1094,8 @@ GET /=/role/Newname
 GET /=/role/Newname/~/~
 --- response_like
 ^\[
-    {"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]$
 
 
@@ -1212,8 +1212,8 @@ GET /=/role/Poster
 GET /=/role/Poster/~/~
 --- response_like
 ^\[
-    {"id":"\d+","method":"GET","url":"/=/model"},
-    {"id":"\d+","method":"POST","url":"/=/model/A/~/~"}
+    {"id":"\d+","method":"GET","prohibiting":false,"url":"/=/model"},
+    {"id":"\d+","method":"POST","prohibiting":false,"url":"/=/model/A/~/~"}
 \]$
 
 
@@ -1399,6 +1399,7 @@ PUT /=/role/Poster
 }
 --- response
 {"error":"Password too short; at least 6 chars are required.","success":0}
+--- SKIP
 
 
 

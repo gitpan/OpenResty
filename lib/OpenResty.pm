@@ -1,11 +1,11 @@
 package OpenResty;
 
-our $VERSION = '0.003021';
+our $VERSION = '0.004000';
 
 use strict;
 use warnings;
 
-#use Smart::Comments;
+#use Smart::Comments '####';
 use Data::UUID;
 use YAML::Syck ();
 use JSON::XS ();
@@ -28,15 +28,6 @@ use OpenResty::Limits;
 #use encoding "utf8";
 
 use OpenResty::Util;
-use OpenResty::Handler::Model;
-use OpenResty::Handler::View;
-use OpenResty::Handler::Feed;
-use OpenResty::Handler::Action;
-use OpenResty::Handler::Role;
-use OpenResty::Handler::Unsafe;
-use OpenResty::Handler::Login;
-use OpenResty::Handler::Captcha;
-use OpenResty::Handler::Version;
 use Encode::Guess;
 
 #$YAML::Syck::ImplicitUnicode = 1;
@@ -114,6 +105,15 @@ sub call_level {
     return $_[0]->{_call_level};
 }
 
+sub config {
+    my $key = pop;
+    $OpenResty::Config{$key};
+}
+
+sub cache {
+    $OpenResty::Cache;
+}
+
 sub init {
     my ($self, $rurl) = @_;
     my $class = ref $self;
@@ -127,6 +127,22 @@ sub init {
         OpenResty->connect($backend);
         #die "Backend connection lost: ", $db_state, "\n";
     }
+
+    # cache the results of CGI::Simple::url_param
+    $self->{_url_params} = {};
+    my $cgi2 = bless {}, 'CGI::Simple';
+    #die $ENV{'QUERY_STRING'};
+    $cgi2->_parse_params( $ENV{'QUERY_STRING'} );
+    #return $self->{'.url_param'}->param( $param );
+    #use Data::Dumper;
+    #warn Dumper($cgi2);
+    for my $param ($cgi2->param) {
+        #die $param;
+        $self->{_url_params}->{$param} = $cgi2->param($param);
+    }
+    #### params: $self->{_url_params}
+    #### use_cookie: $self->builtin_param('_use_cookie')
+    #### session: $self->builtin_param('_session')
 
     $self->{_use_cookie}  = $self->builtin_param('_use_cookie') || 0;
     $self->{_session}  = $self->builtin_param('_session');
@@ -195,10 +211,13 @@ sub init {
     #die "#XXXX !!!! $http_meth", Dumper($self);
 
     my $url = $$rurl;
-    eval {
-        from_to($url, $charset, 'utf8');
-    };
-    warn $@ if $@;
+    if ($charset ne 'UTF-8') {
+        eval {
+            #warn "HERE!";
+            from_to($url, $charset, 'utf8');
+        };
+        warn $@ if $@;
+    }
     #warn $url;
 
     $url =~ s{/+$}{}g;
@@ -338,21 +357,24 @@ sub response {
     my $str = '';
     if (my $bin_data = $self->{_bin_data}) {
         binmode \*STDOUT;
-        print $cgi->header(
-            -type => "$type" . ($type =~ /text/ ? "; charset=$charset" : ""),
-            @cookies ? (-cookie => \@cookies) : ()
-        );
+        local $_;
         if (my $callback = $self->{_callback}) {
             chomp($bin_data);
-            print "$callback($bin_data);\n";
+            *_ = \"$callback($bin_data);\n";
         } else {
-            print $bin_data;
+            *_ = \$bin_data;
         }
+
+        print $cgi->header(
+            -type => "$type" . ($type =~ /text/ ? "; charset=$charset" : ""),
+            '-content-length' => length,
+            @cookies ? (-cookie => \@cookies) : ()
+        ), $_;
         return;
     }
-    if ($self->{_error}) {
+    if (exists $self->{_error}) {
         $str = $self->emit_error($self->{_error});
-    } elsif ($self->{_data}) {
+    } elsif (exists $self->{_data}) {
         my $data = $self->{_data};
         if ($self->{_warning}) {
             $data->{warning} = $self->{_warning};
@@ -361,48 +383,51 @@ sub response {
     }
     #die $charset;
     # XXX if $charset is 'UTF-8' then don't bother decoding and encoding...
-    eval {
-        #$str = decode_utf8($str);
-        #if (is_utf8($str)) {
-            #} else {
-            #warn "Encoding: $charset\n";
-        from_to($str, 'utf8', $charset);
-            #$str = decode('UTF-8', $str);
-            #$str = encode($charset, $str);
-            #}
-    }; warn $@ if $@;
+    if ($charset ne 'UTF-8') {
+        #warn "HERE!";
+        eval {
+            #$str = decode_utf8($str);
+            #if (is_utf8($str)) {
+                #} else {
+                #warn "Encoding: $charset\n";
+            from_to($str, 'utf8', $charset);
+                #$str = decode('UTF-8', $str);
+                #$str = encode($charset, $str);
+                #}
+        }; warn $@ if $@;
+    }
     #warn $Dumper;
     #warn $ext2dumper{'.js'};
+    $str =~ s/\n+$//s;
     if (my $var = $self->{_var} and $Dumper eq $ext2dumper{'.js'}) {
         $str = "$var=$str;";
     } elsif (my $callback = $self->{_callback} and $Dumper eq $ext2dumper{'.js'}) {
         $str = "$callback($str);";
     }
-    $str =~ s/\n+$//s;
 
     #my $meth = $self->{_http_method};
-    # XXX last_response is deprecated; use _last_response instead
-    my $last_res_id = $self->builtin_param('_last_response');
-    ### $last_res_id;
-    ### $meth;
-    if (defined $last_res_id) {
-        #warn "!!!!!!!!!!!!!!!!!!!!!!!!!!wdy!";
-        $Cache->set_last_res($last_res_id, $str);
+    if (my $LastRes = $OpenResty::Dispatcher::Handlers{last}) {
+        $LastRes->set_last_response($self, $str);
     }
     #warn ">>>>>>>>>>>>Cookies<<<<<<<<<<<<<<: @cookies\n";
-    if (length($str) < 500 && $use_gzip) {
-        undef $use_gzip;
-    }
-    print $cgi->header(
-        -type => "$type" . ($type =~ /text/ ? "; charset=$charset" : ""),
-        $use_gzip ? ('-content-encoding' => 'gzip', '-accept-encoding' => 'Vary') : (),
-        @cookies ? (-cookie => \@cookies) : ()
-    );
-    if ($use_gzip) {
-        # compress the content part
-        print Compress::Zlib::memGzip($str);
-    } else {
-        print $str, "\n";
+    #if (length($str) < 500 && $use_gzip) {
+    #undef $use_gzip;
+    #}
+    {
+        local $_;
+        if ($use_gzip) {
+            # compress the content part
+            *_ = \(Compress::Zlib::memGzip($str));
+        } else {
+            *_ = \"$str\n";
+        }
+
+        print $cgi->header(
+            -type => "$type" . ($type =~ /text/ ? "; charset=$charset" : ""),
+            '-content-length' => length,
+            $use_gzip ? ('-content-encoding' => 'gzip', '-accept-encoding' => 'Vary') : (),
+            @cookies ? (-cookie => \@cookies) : ()
+        ), $_;
     }
 }
 
@@ -429,27 +454,21 @@ sub emit_data {
     return eval { $Dumper->($data); }
 }
 
-sub current_user_can {
-    my ($self, $meth, $bits) = @_;
-    my @urls = $bits;
-    my $role = $self->{_role};
-    my $max_i = @$bits - 1;
-    while ($max_i >= 0) {
-        my @last_bits = @{ $urls[-1] };
-        if ($last_bits[$max_i] ne '~') {
-            $last_bits[$max_i] = '~';
-            push @urls, \@last_bits;
+sub get_session {
+    my ($self) = @_;
+    my $session_from_cookie;
+    my $call_level = $self->{_call_level};
+    if ($call_level == 0) { # only check cookies on the toplevel call
+        my $cookies = CGI::Cookie::XS->fetch;
+        if ($cookies) {
+            my $cookie = $cookies->{session};
+            if ($cookie) {
+                $self->{_session_from_cookie} =
+                    $session_from_cookie = $cookie->[-1];
+            }
         }
-    } continue { $max_i-- }
-    map { $_ = '/=/' . join '/', @$_ } @urls;
-    my $or_clause = join ' or ', map { [:sql| url = $_ |] } @urls;
-    my $sql = [:sql|
-        select count(*)
-        from _access
-        where role = $role and method = $meth and ( |] . "$or_clause);";
-    ### $sql
-    my $res = $self->select($sql);
-    return do { $res->[0][0] };
+    }
+    $self->{_session} || $session_from_cookie;
 }
 
 sub has_feed {
@@ -469,13 +488,16 @@ sub has_feed {
 
 sub has_role {
     my ($self, $role) = @_;
-    return 1 if $role eq 'Admin' or $role eq 'Public'; # shortcut...
+    return 'password' if $role eq 'Admin';
+    return 'anonymous' if $role eq 'Public'; # shortcut...
     _IDENT($role) or
         die "Bad role name: ", $OpenResty::Dumper->($role), "\n";
+
 
     my $user = $self->current_user;
     if (my $login_meth = $Cache->get_has_role($user, $role)) {
         #warn "has view cache HIT\n";
+        #warn "from cache: $login_meth\n";
         return $login_meth;
     }
 
@@ -485,11 +507,15 @@ sub has_role {
         where name = $role
         limit 1;
     |];
-    my $ret;
-    eval { $ret = $self->select($sql)->[0][0]; };
-    if ($ret) { $Cache->set_has_role($user, $role, $ret) }
+    my $ret = $self->select($sql);
+    if ($ret && ref $ret) {
+        $ret = $ret->[0][0];
+        #warn "Returned: $ret\n";
+        if ($ret) { $Cache->set_has_role($user, $role, $ret) }
+        return $ret;
+    }
+    return undef;
     #warn "HERE!";
-    return $ret;
 }
 
 sub has_view {
@@ -594,16 +620,15 @@ sub set_role {
     $self->{_role} = $role;
 }
 
-sub builtin_param {
-    my ($self, $key) = @_;
-    my $cgi = $self->{_cgi};
-    if (substr($key, 0, 1) ne '_') {
-        die "Builtin param must be preceded by an underscore.\n";
+sub url_param {
+    if (@_ > 1) {
+        $_[0]->{_url_params}->{$_[1]};
+    } else {
+        keys %{ $_[0]->{_url_params} };
     }
-    (my $deprecated = $key) =~ s/^_//;
-    return scalar($cgi->url_param($deprecated)) ||
-        scalar($cgi->url_param($key));
 }
+
+*builtin_param = \&url_param;
 
 1;
 __END__
@@ -616,13 +641,13 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.3.21 released on August 20, 2008.
+This document describes OpenResty 0.4.0 released on September 9, 2008.
 
 =head1 DESCRIPTION
 
 This module implements the server-side OpenResty web service protocol. It provides scriptable and extensible web services for both server-side and client-side (pure AJAX) web applications.
 
-Currently this module can serve as a public web interface to a distributive or desktop PostgreSQL database system. In particular, it provides roles, models, views, actions, captchas, the minisql language, and many more to the web users.
+Currently this module can serve as a public web interface to a distributed or desktop PostgreSQL database system. In particular, it provides roles, models, views, actions, captchas, the minisql language, and many more to the web users.
 
 "Another framework?" No, no, no, not all!
 

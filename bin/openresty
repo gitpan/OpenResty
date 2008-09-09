@@ -11,7 +11,6 @@ use OpenResty::Dispatcher;
 use OpenResty::Limits;
 use Getopt::Std;
 use Time::HiRes;
-use Digest::MD5 'md5';
 
 my $cmd = lc(shift) || $ENV{OPENRESTY_COMMAND};
 
@@ -171,6 +170,9 @@ if ($cmd eq 'adduser') {
 	} else {
 		print "Captcha secret updated.\n";
 	}
+} elsif ($cmd eq 'compile') {
+    require OpenResty::Script::Compile;
+    OpenResty::Script::Compile->go(\@ARGV);
 } else {
     die "Unknown command: $cmd\n";
 }

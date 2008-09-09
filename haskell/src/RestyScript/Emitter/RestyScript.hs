@@ -8,8 +8,13 @@ import RestyScript.Util
 import Text.Printf (printf)
 import qualified Data.ByteString.Char8 as B
 
+infixl 5 ~~
+
 join :: B.ByteString -> [RSVal] -> B.ByteString
 join sep ls = B.intercalate sep $ map emit ls
+
+joinStr :: B.ByteString -> [B.ByteString] -> B.ByteString
+joinStr sep ls = B.intercalate sep ls
 
 (~~) = B.append
 
@@ -36,6 +41,7 @@ emit node = case node of
     Model model -> emit model
     Column col -> emit col
     Symbol name -> bs $ quoteIdent name
+    Type name -> bs name
     Integer int -> bs $ show int
     Float float -> bs $ printf "%0f" float
     Or a b -> "(" ~~ emit a ~~ " or " ~~ emit b ~~ ")"
@@ -66,5 +72,7 @@ emit node = case node of
     All ls -> "all " ~~ join ", " ls
     RSTrue -> "true"
     RSFalse -> "false"
+    Capture sig -> "(" ~~ (joinStr ", " $ map aux sig) ~~ ")"
+        where aux (param, typ) = emit param ~~ " " ~~ emit typ
     where bs = B.pack
 

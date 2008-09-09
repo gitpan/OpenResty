@@ -1,0 +1,111 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+[%- PROCESS "header.tt" %]
+<body>
+  <a class="location-anchor" name=""></a>
+  <center>
+  <div id="body">
+    <div id="doc">
+
+      <div xmlns="" id="hd">
+        <div id="hContent">
+
+          <div id="headerContent" class="editorWrap">
+            <div id="headerZoneElement" class=
+            "editable rte flexContent" rel="itemGuid.sit.hc.001">
+              <h1>ON Capital China Fund</h1>
+            </div>
+          </div>
+        </div>
+
+        <div id="hMisc">
+            <div id="ie-wait-message" class="wait-message">
+                <img src="loading.gif"/>
+                &nbsp; <b>Loading...</b>&nbsp;
+            </div>
+
+          <div class="contactInfoContainer" style=
+          "width:auto;height:auto">
+
+            <p class="vcard"><span class="adr"><span class=
+            "street-address">F22 Silver Base Center</span><br />
+            <span class="extended-address">Gloucester Road,
+            Central</span><br />
+            <span class="locality">Hong
+            Kong</span></span><span class="phoneNumbers"><br />
+            <span class="tel"><span class="type">ph:</span> +852
+            6880 0198</span></span><br />
+            <span class="mailtoWrapper"><a class="email" href=
+            "mailto:info@onccf.com">info@onccf.com</a></span></p>
+          </div>
+        </div>
+      </div>
+
+      <div xmlns="" id="navigation">
+        <ul id="mainNav">
+        </ul>
+      </div>
+      <div xmlns="" id="bd">
+        <div id="pageName">
+          <div id="pageNameContent" class="editorWrap">
+            <div id="pageNameZoneContent">
+              <h2 id="page-title"></h2>
+            </div>
+          </div>
+        </div>
+
+        <div id="zWrap">
+          <div id="zA">
+            <div id="wait-message" class="wait-message">
+                <img src="loading.gif"/>
+                &nbsp; <b>Loading...</b>&nbsp;
+            </div>
+
+
+            <div id="page-content" class="page-content modWrap">
+            </div>
+          </div>
+
+          <div id="zC">
+              <div id="contact-us">
+                <h3>Contact Us</h3>
+                <p>We have offices over Hong Kong, Beijing, Shanghai
+                and Shenzhen, you can contact us where most
+                convenient for you.</p>Go to <a type="2" href=
+                "#menu/contact" class="internallink" onclick="savedAnchor = null">Contact Us</a>
+                page
+                </p>
+              </div>
+          </div>
+        </div>
+      </div>
+
+      <div xmlns="" id="ft">
+        <div id="fContent">
+          <div id="footerContent" class="editorWrap">
+            <div id="footerZoneElement" class=
+            "editable rte flexContent" rel=".footerContent"></div>
+          </div>
+        </div>
+
+        <div id="fMisc">
+          <div class="contactInfoContainer" style=
+          "width:auto;height:auto">
+            <p class="vcard"><span class="adr"><span class=
+            "street-address">F22 Silver Base Center</span><br />
+            <span class="extended-address">Gloucester Road,
+            Central</span><br />
+            <span class="locality">Hong
+            Kong</span></span><span class="phoneNumbers"><br />
+            <span class="tel"><span class="type">ph:</span> +852
+            6880 0198</span></span><br />
+            <span class="mailtoWrapper"><a class="email" href=
+            "mailto:info@onccf.com">info@onccf.com</a></span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </center>
+</body>
+</html>
+

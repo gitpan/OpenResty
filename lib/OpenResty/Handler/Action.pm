@@ -10,6 +10,14 @@ use OpenResty::RestyScript;
 use OpenResty::Limits;
 use Data::Dumper qw(Dumper);
 
+use base 'OpenResty::Handler::Base';
+
+__PACKAGE__->register('action');
+
+sub level2name {
+    qw< action_list action action_param action_exec  >[$_[-1]]
+}
+
 sub POST_action_exec {
     my ($self, $openresty, $bits) = @_;
     my $action = $bits->[1];
@@ -139,6 +147,8 @@ sub exec_RunAction {
             local %ENV;
             $ENV{REQUEST_URI} = $url;
             $ENV{REQUEST_METHOD} = $http_meth;
+            (my $query = $url) =~ s/(.*?\?)//g;
+            $ENV{QUERY_STRING} = $query;
             my $cgi = new_mocked_cgi($url, $content);
             my $call_level = $openresty->call_level;
             $call_level++;

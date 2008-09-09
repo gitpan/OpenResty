@@ -145,9 +145,8 @@ end;
 \$\$ language plpgsql;
 _EOC_
     ],
-    [
-        '0.005' => '',
-    ],
+    [ '0.005' => '' ],
+    [ '0.006' => '' ],
 );
 
 our @LocalVersionDelta = (
@@ -241,6 +240,26 @@ begin
 end;
 $$ language plpgsql;
 _EOC_
+    [ '0.006' => <<'_EOC_' ],
+create or replace function _upgrade() returns integer as $$
+begin
+    alter table _models drop column table_name;
+    alter table _columns rename column table_name to model;
+
+    delete from _access where role = 'Admin';
+    alter table _access add column segments smallint;
+    alter table _access add column prohibiting boolean default false;
+    alter table _access rename column url to prefix;
+    update _access
+    set segments = char_length(regexp_replace(prefix, '[^/]+', '', 'g')) - 1,
+        prohibiting = false, prefix = regexp_replace(prefix, '^/=/|(/~)+$', '', 'g');
+    alter table _access alter column prohibiting set not null;
+    alter table _access alter column prefix set not null;
+
+    return 0;
+end;
+$$ language plpgsql;
+_EOC_
 );
 
 sub upgrade_all {
@@ -312,7 +331,7 @@ sub upgrade_local_metamodel {
     my ($self, $base) = @_;
 
     if (!defined $base) { die "No upgrading base specified" }
-    if (!$self->has_user('_global')) {
+    if ( ! $self->has_user('_global')) {
         my $user = $self->{user};
         $self->upgrade_global_metamodel(0);
         $self->set_user($user);
@@ -395,7 +414,10 @@ sub drop_user {
     my ($self, $user) = @_;
     if ($self->has_user('_global')) {
         $self->set_user('_global');
-        $self->do("delete from _accounts where name ='$user'");
+        eval {
+            $self->do("delete from _accounts where name ='$user'");
+        };
+        if ($@) { warn $@ }
         $OpenResty::Cache->remove_has_user($user) if $OpenResty::Cache;
     }
 }

@@ -8,7 +8,16 @@ use OpenResty::Util;
 use Params::Util qw( _HASH _STRING );
 use OpenResty::Limits;
 use OpenResty::RestyScript::View;
+use OpenResty::Handler::Model;
 use OpenResty::QuasiQuote::SQL;
+
+use base 'OpenResty::Handler::Base';
+
+__PACKAGE__->register('view');
+
+sub level2name {
+    qw< view_list view view_param view_exec >[$_[-1]]
+}
 
 sub POST_view {
     my ($self, $openresty, $bits) = @_;
@@ -156,8 +165,8 @@ sub exec_view {
     my $exists;
     my %vars;
 
-    foreach my $var ($cgi->url_param) {
-        $vars{$var} = $cgi->url_param($var);
+    foreach my $var ($openresty->url_param) {
+        $vars{$var} = $openresty->url_param($var) unless $var =~ /^_/;
     }
 
     if ($fix_var ne '~' and $fix_var_value ne '~') {

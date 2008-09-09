@@ -9,6 +9,16 @@ use OpenResty::Util;
 use File::Spec;
 use File::ShareDir qw( module_dir );
 
+use base 'OpenResty::Handler::Base';
+
+__PACKAGE__->register('version');
+
+sub requires_acl { undef }
+
+sub level2name {
+    qw< version version_verbose >[$_[-1]]
+}
+
 our $Revision;
 
 sub trim {
@@ -16,7 +26,9 @@ sub trim {
     $s;
 }
 
-sub GET_version {
+sub GET_version { OpenResty->version }
+
+sub GET_version_verbose {
     my ($self, $openresty, $bits) = @_;
     if (!defined $Revision) {
         my $path = "$FindBin::Bin/../share/openresty_revision";
@@ -60,6 +72,10 @@ OpenResty::Handler::Version - The version handler for OpenResty
 This OpenResty handler class implements the Version API, i.e., the C</=/version> interface.
 
 Typically it returns something like this
+
+"0.3.9"
+
+More detailed information can be obtained by C<GET /=/version/more>:
 
 "OpenResty 0.3.9 (revision 1682) with the PgFarm (op901000) backend.\nCopyright (c) 2007-2008 by Yahoo! China EEEE Works, Alibaba Inc.\n"
 

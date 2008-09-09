@@ -1,6 +1,6 @@
 package OpenResty::Handler::Role;
 
-#use Smart::Comments;
+#use Smart::Comments '####';
 use strict;
 use warnings;
 
@@ -8,6 +8,14 @@ use Params::Util qw( _HASH _STRING _ARRAY );
 use OpenResty::Util;
 use OpenResty::Limits;
 use OpenResty::QuasiQuote::SQL;
+
+use base 'OpenResty::Handler::Base';
+
+__PACKAGE__->register('role');
+
+sub level2name {
+    qw< role_list role access_rule_column access_rule >[$_[-1]];
+}
 
 sub DELETE_role {
     my ($self, $openresty, $bits) = @_;
@@ -69,28 +77,63 @@ sub GET_access_rule {
     if ($col ne '~' and $col ne 'method' and $col ne 'url' and $col ne 'id') {
         die "Unknown access rule field: $col\n";
     }
+    $col = 'prefix' if $col eq 'url';
 
     my $sql;
     if ($value eq '~') {
-        $sql = "select id,method,url from _access where role = '$role';";
+        $sql = [:sql|
+            select id, method, prefix, segments, prohibiting
+            from _access
+            where role = $role;
+        |];
     } else {
         my $op = $openresty->{_cgi}->url_param('op') || 'eq';
         $op = $OpenResty::OpMap{$op};
         if ($op eq 'like') {
             $value = "%$value%";
         }
-        my $quoted = Q($value);
+        #my $quoted = Q($value);
 
         if ($col eq '~') {
-            $sql = "select id,method,url from _access where role = '$role' and ( id::text $op $quoted or method $op $quoted or url $op $quoted);";
+            $sql = [:sql|
+                select id, method, prefix, segments, prohibiting
+                from _access where role = $role and
+                    (id::text $kw:op $value or method $kw:op $value or
+                     prefix $kw:op $value);
+            |];
         } else {
-            $sql = "select id,method,url from _access where role = '$role' and $col $op $quoted;";
+            $sql = [:sql|
+                select id, method, prefix, segments, prohibiting
+                from _access
+                where role = $role and $sym:col $kw:op $value;
+            |];
         }
     }
     ### $sql
     my $res = $openresty->select($sql, { use_hash => 1 });
     $res ||= [];
+    $self->adjust_rules($res);
     return $res;
+}
+
+sub adjust_rules {
+    my ($self, $rules) = @_;
+    for my $rule (@$rules) {
+        my $prefix = delete $rule->{prefix};
+        my $segments = delete $rule->{segments};
+        my @prefix_segs = split /\//, $prefix;
+        $rule->{url} = '/=' . ($prefix ? '/' : '') .
+            $prefix . ('/~' x ($segments - @prefix_segs));
+        my $prohibit = $rule->{prohibiting};
+        if ($prohibit && $prohibit eq 'f') {
+            # XXX to work around a bug in PgFarm's JSON emitter
+            $rule->{prohibiting} = JSON::XS::false;
+        } elsif ($prohibit) {
+            $rule->{prohibiting} = JSON::XS::true;
+        } else {
+            $rule->{prohibiting} = JSON::XS::false;
+        }
+    }
 }
 
 sub PUT_access_rule {
@@ -117,7 +160,17 @@ sub PUT_access_rule {
         if (lc($col) eq 'id') {
             die "Column \"id\" reserved.\n";
         }
-        $update->set($col => Q($val));
+        if ($col eq 'url') {
+            $val =~ s/^\/=\/+//;
+            my @bits = split /\/+/, $val;
+            (my $prefix = $val) =~ s/(?:\/~)+$//g;
+            $prefix = '' if $prefix eq '~';
+            my $segs = @bits;
+            $update->set(prefix => Q($prefix));
+            $update->set(segments => Q($segs));
+        } else {
+            $update->set(QI($col) => Q($val));
+        }
     }
 
     if ($value eq '~') {
@@ -133,7 +186,7 @@ sub PUT_access_rule {
         if ($col eq '~') {
             $update->where(
                 'role', '=', Q($role),
-                "(id::text $op $quoted or method $op $quoted or url $op $quoted)"
+                "(id::text $op $quoted or method $op $quoted or prefix $op $quoted)"
             );
 
         } else {
@@ -198,7 +251,8 @@ sub insert_rule {
     if (!defined $url) {
         die "row $row: Column \"url\" is missing.\n";
     }
-    if ($url !~ /^\/=\//) {
+    my $prohibiting = delete $data->{prohibiting} ? 'true' : 'false';
+    if ($url !~ s/^\/=\/+//) {
         die "URL must be lead by \"/=/\".\n";
     }
     if (%$data) {
@@ -206,9 +260,13 @@ sub insert_rule {
             join(" ", keys %$data),
             "\n";
     }
+    my @bits = split /\/+/, $url;
+    (my $prefix = $url) =~ s/(?:\/~)+$//g;
+    $prefix = '' if $prefix eq '~';
+    my $segs = @bits;
     my $sql = [:sql|
-        insert into _access (role, method, url)
-        values($role, $method, $url) |];
+        insert into _access (role, method, prefix, segments, prohibiting)
+        values ($role, $method, $prefix, $segs, $prohibiting) |];
     return $openresty->do($sql);
 }
 
@@ -252,12 +310,15 @@ sub DELETE_role_list {
     my ($self, $openresty, $bits) = @_;
 
     my $sql = [:sql|
-        select name, description
+        select name
         from _roles |];
     my $roles = $openresty->select($sql);
     my $user = $openresty->current_user;
     $roles ||= [];
     for my $role (@$roles) {
+        $role = $role->[0];
+        next if $role eq 'Admin' or $role eq 'Public';
+        #die "Removing cache for role $user.$role...\n";
         $OpenResty::Cache->remove_has_role($user, $role);
     }
 
@@ -386,7 +447,7 @@ sub PUT_role {
         }
         _STRING($new_password) or
             die "Bad password: ", $OpenResty::Dumper->($new_password), "\n";
-        check_password($new_password);
+        #check_password($new_password);
         $update->set(password => Q($new_password));
     }
 
@@ -405,6 +466,36 @@ sub PUT_role {
     }
     my $retval = $openresty->do("$update" . $extra_sql) + 0;
     return { success => $retval >= 0 ? 1 : 0 };
+}
+
+sub current_user_can {
+    my ($self, $openresty, $meth, $bits) = @_;
+    my $role = $openresty->{_role};
+    return 1 if $role eq 'Admin'; # short cut
+    my $url = join '/', @$bits;
+    my $segs = @$bits;
+    my $sql = [:sql|
+        select prohibiting
+        from _access
+        where role = $role and method = $meth and segments = $segs
+            and $url like (prefix || '%')
+        order by prohibiting desc
+        limit 1;
+    |];
+    ### $sql
+    my $res = $openresty->select($sql);
+    if ($res && @$res) {
+        my $rule = $res->[0];
+        #### $rule
+        my $prohibiting = $rule->[0];
+        if ($prohibiting) {
+            # XXX to work around a bug in PgFarm's JSON emitter
+            if ($prohibiting eq 'f') { return 1; }
+            return undef;
+        }
+        return 1;
+    }
+    return undef;
 }
 
 1;

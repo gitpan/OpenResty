@@ -12,7 +12,16 @@ use DateTime::Format::Pg;
 use DateTime::Format::Strptime;
 use OpenResty::FeedWriter::RSS;
 use POSIX qw( strftime );
+use Data::Structure::Util qw( _utf8_off );
 use OpenResty::QuasiQuote::SQL;
+
+use base 'OpenResty::Handler::Base';
+
+__PACKAGE__->register('feed');
+
+sub level2name {
+    qw< feed_list feed feed_param feed_exec >[$_[-1]];
+}
 
 my $FormatterPattern = '%a, %d %b %Y %H:%M:%S GMT';
 my $Formatter = DateTime::Format::Strptime->new(pattern => $FormatterPattern);
@@ -217,7 +226,10 @@ sub exec_feed {
         $rss->add_entry($entry);
     }
     ### DONE...
+    #local *_ = \($rss->as_xml);
+    #_utf8_off($_);
     $openresty->{_bin_data} = $rss->as_xml;
+    _utf8_off($openresty->{_bin_data});
     $openresty->{_type} = 'application/rss+xml; charset=utf-8';
     return undef;
 }

@@ -14,13 +14,22 @@ use Encode qw(is_utf8);
 use OpenResty::QuasiQuote::SQL;
 use OpenResty::QuasiQuote::Validator;
 
+use base 'OpenResty::Handler::Base';
+
 #%OpenResty::AccountFiltered = %OpenResty::AccountFiltered;
 #$OpenResty::OpMap = $OpenResty::OpMap;
+
+__PACKAGE__->register('model');
+
+sub level2name {
+    qw< model_list model model_column model_row >[$_[-1]]
+}
 
 sub check_type {
     my $type = shift;
     if ($type !~ m{^ \s*
                 (
+                    smallint |
                     bigint |
                     cidr |
                     inet |
@@ -135,7 +144,7 @@ sub GET_model_column {
         my $sql = [:sql|
             select name, type, label, "default"
             from _columns
-            where table_name = $model
+            where model = $model
             order by id |];
         my $list = $openresty->select($sql, { use_hash => 1 });
         if (!$list or !ref $list) { $list = []; }
@@ -155,7 +164,7 @@ sub GET_model_column {
         my $sql = [:sql|
             select name, type, label, "default"
             from _columns
-            where table_name = $model and name = $col
+            where model = $model and name = $col
             order by id |];
         my $res = $openresty->select($sql, { use_hash => 1 });
         if (!$res or !@$res) {
@@ -227,7 +236,7 @@ sub POST_model_column {
     }
 
     my $sql = [:sql|
-        insert into _columns (name, label, type, table_name, "default")
+        insert into _columns (name, label, type, model, "default")
             values( $col, $label, $type, $model, $json_default);
     |];
     #### $default
@@ -312,7 +321,7 @@ sub PUT_model_column {
         }
     }
 
-    $update_meta->where(table_name => Q($model))
+    $update_meta->where(model => Q($model))
         ->where(name => Q($col));
 
     # XXX TODO: add support for updating column's uniqueness
@@ -343,11 +352,11 @@ sub DELETE_model_column {
          $openresty->warning("Column \"id\" is reserved.");
      my $columns = $self->get_model_col_names($openresty, $model);
      for my $c (@$columns) {
-        $sql .= "delete from _columns where table_name = '$model' and name='$c';" .
+        $sql .= "delete from _columns where model = '$model' and name='$c';" .
                       "alter table \"$model\" drop column \"$c\" restrict;";
          }
     } else {
-        $sql = "delete from _columns where table_name='$model' and name='$col'; alter table \"$model\" drop column \"$col\" restrict;";
+        $sql = "delete from _columns where model='$model' and name='$col'; alter table \"$model\" drop column \"$col\" restrict;";
     }
     my $res = $openresty->do($sql);
     return { success => $res > -1? 1:0 };
@@ -456,8 +465,8 @@ sub new_model {
         die "Model \"$model\" already exists.\n";
     }
     my $sql = [:sql|
-        insert into _models (name, table_name, description)
-        values ($model, $model, $desc); |];
+        insert into _models (name, description)
+        values ($model, $desc); |];
 
     $sql .=
         [:sql| create table $sym:model (id serial primary key |];
@@ -490,7 +499,7 @@ sub new_model {
         }
 
         my $col_sql = [:sql|
-            insert into _columns (name, type, label, table_name, "default")
+            insert into _columns (name, type, label, model, "default")
             values ($name, $type, $label, $model, $json_default); |];
         #warn Q($json_default);
 
@@ -508,7 +517,12 @@ sub new_model {
 
     #register_columns
     eval {
-        $openresty->do($sql2 . $sql);
+        #if ($OpenResty::BackendName eq 'PgFarm') {
+            # XXX to work around a bug in our PL/Proxy cluster
+            #$openresty->select($sql2 . $sql);
+            #} else {
+            $openresty->do($sql2 . $sql);
+            #}
     };
     if ($@) {
         die "Failed to create model \"$model\": $@\n";
@@ -604,7 +618,7 @@ sub model_count {
 sub column_count {
     my ($self, $openresty, $model) = @_;
     return $openresty->select(
-        [:sql| select count(*) from _columns where table_name = $model |]
+        [:sql| select count(*) from _columns where model = $model |]
     )->[0][0];
 }
 
@@ -635,7 +649,7 @@ sub get_model_cols {
     $sql = [:sql|
         select name, type, label, "default"
         from _columns
-        where table_name = $model
+        where model = $model
         order by id |];
     $list = $openresty->select($sql, { use_hash => 1 });
     if (!$list or !ref $list) { $list = []; }
@@ -662,7 +676,7 @@ sub get_model_col_names {
     my $sql = [:sql|
         select name
         from _columns
-        where table_name = $model |];
+        where model = $model |];
 
     my $list = $openresty->select($sql);
     if (!$list or !ref $list) { return []; }
@@ -679,7 +693,7 @@ sub has_model_col {
     my $select = [:sql|
         select id
         from _columns
-        where table_name = $model and name = $col
+        where model = $model and name = $col
         limit 1 |];
     eval {
         $res = $openresty->select("$select")->[0][0];
@@ -693,8 +707,8 @@ sub drop_table {
     $OpenResty::Cache->remove_has_model($user, $model);
     return [:sql|
         drop table if exists $sym:model;
-        delete from _models where table_name = $model;
-        delete from _columns where table_name = $model;
+        delete from _models where name = $model;
+        delete from _columns where model = $model;
     |];
 }
 
@@ -1000,8 +1014,8 @@ sub alter_model {
         }
         $OpenResty::Cache->remove_has_model($user, $model);
         $sql .= [:sql|
-            update _models set table_name=$new_model, name=$new_model where name=$model;
-            update _columns set table_name=$new_model where table_name=$model;
+            update _models set name=$new_model where name=$model;
+            update _columns set model=$new_model where model=$model;
             alter table $sym:model rename to $sym:new_model;
         |];
     }
