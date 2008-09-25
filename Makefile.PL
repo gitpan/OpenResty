@@ -18,7 +18,7 @@ $version .= 0 until length($version) >= length('0.123456');
 $version =~ s{^(\d+)\.(\d{3})(\d{3})?$}{join '.', int($1), int($2), int($3||0)}e;
 version($version);
 
-requires            ('CGI::Cookie::XS' => '0.11');
+requires            ('CGI::Cookie::XS' => '0.15');
 requires            ('FCGI');
 requires            ('CGI::Simple' => '1.103');
 requires            ('CGI::Simple::Cookie');
@@ -71,7 +71,7 @@ if ($arg eq 'product') {
                 recommends    ('Class::Prototyped'),
                 recommends    ('Test::LongString'),
                 recommends    ('HTTP::Response' => '1.53'),
-                recommends    ('WWW::OpenResty' => '0.08'),
+                recommends    ('WWW::OpenResty' => '0.09'),
         ]
     );
 } elsif ($arg eq 'devel') {
@@ -82,7 +82,7 @@ if ($arg eq 'product') {
     build_requires      ('LWP::UserAgent');
     build_requires      ('HTTP::Response' => '1.53');
     build_requires      ('Cache::Cache' => '1.05');
-    build_requires      ('WWW::OpenResty' => '0.08'),
+    build_requires      ('WWW::OpenResty' => '0.09'),
 } else {
     die "Unknown Makefile.PL argument: \"$arg\"\n";
 }

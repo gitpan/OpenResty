@@ -23,7 +23,7 @@ my $user = $opts{u} or
     die "No OpenResty account name specified via option -u\n";
 my $password = $opts{p} or
     die "No OpenResty account's Admin password specified via option -p\n";
-my $server = $opts{s} || 'http://api.openresty.org';
+my $server = $opts{s} || 'http://api.eeeeworks.org';
 
 my ($blog_name, $blog_home);
 if ($user eq 'agentzh') {
@@ -269,7 +269,7 @@ $resty->post(
         "author" => $user,
         "copyright" => "Copyright 2008 by Yahoo! China EEEE Works",
         "language" => "zh-cn",
-        "title" => "Posts for $blog_name",
+        "title" => "$blog_name - Posts",
         "view" => "PostFeed",
         "link" => "http://$blog_home",
         "logo" => "http://$blog_home/me.jpg",
@@ -282,7 +282,7 @@ $resty->post(
         "description" => "Feed for blog comments",
         "copyright" => "Copyright 2008 by Yahoo! China EEEE Works",
         "language" => "zh-cn",
-        "title" => "Comments for $blog_name",
+        "title" => "$blog_name - Comments",
         "view" => "CommentFeed",
         "link" => "http://$blog_home",
         "logo" => "http://$blog_home/me.jpg",

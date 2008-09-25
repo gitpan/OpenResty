@@ -96,7 +96,7 @@ sub said {
                     channel => $channel,
                     body => $line,
                 );
-                $self->log($channel, $self->nick, $line);
+                #$self->log($channel, $self->nick, $line);
             }
         };
         if ($@) { $self->log_error($@); }
@@ -111,7 +111,7 @@ sub said {
     #$say->("[$enc]: $text\n");
     #}
     $self->process_msg($text, $say, $sender);
-    $self->log($e->{channel}, $e->{who}, $e->{raw_body});
+    #$self->log($e->{channel}, $e->{who}, $e->{raw_body});
     return undef;
 }
 
@@ -146,8 +146,8 @@ sub log {
             eval {
                 $res = $Resty->post(
                     '/=/model/IrcLog/~/~',
-                    { user => $self->resty_account,
-                      password => md5_hex($self->resty_password) },
+                    { _user => $self->resty_account,
+                      _password => md5_hex($self->resty_password) },
                     {
                         channel => $channel,
                         sender  => $sender,
@@ -267,7 +267,7 @@ sub seen_person {
         eval {
             $res = $Resty->get(
                 '/=/view/LastSeen/~/~',
-                { sender => $sender, user => $self->resty_account, password => $self->resty_password }
+                { sender => $sender, _user => $self->resty_account, _password => $self->resty_password }
             );
         };
         if ($@) { $self->log_error($@); return }
@@ -329,10 +329,13 @@ sub find_employee {
         highway => '周海维',
         carriezh => '张皛珏',
         tangch => 'cheng.tang',
-        'whj' => '王惠军',
+        whj => '王惠军',
+        laser => '何伟平',
+        Yi => '赵熠',
     );
     $text =~ s/$pattern//;
     $text =~ s/\n+//sg;
+    $text =~ s/^\s+|\s+$//g;
     if ($text) {
         $text = $map{$text} || $text;
         my $url = 'http://api.openresty.org/=/model/YahooStaff/~/' . $text;
@@ -342,14 +345,14 @@ sub find_employee {
         eval {
             $res = $Resty->get(
                 $url,
-                { op => 'contains', limit => 3 }
+                { _op => 'contains', _limit => 3 }
             );
         };
         if ($@ =~ /Login required/i) {
             $Resty->login($self->resty_account, $self->resty_password);
             $res = $Resty->get(
                 $url,
-                { op => 'contains', limit => 3 }
+                { _op => 'contains', _limit => 3 }
             );
         }
         if (_ARRAY($res)) {

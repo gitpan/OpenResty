@@ -1,5 +1,5 @@
-//var restyhost = 'http://api.openresty.org';
-var restyhost = 'http://localhost';
+var restyhost = 'http://api.openresty.org';
+//var restyhost = 'http://localhost';
 var account = 'qyliu';
 
 var openresty;
@@ -179,9 +179,9 @@ function submit() {
             openresty.callback = supportCallback;
             //(res[0]?openresty.putByGet:openresty.postByGet)({ c: new_c }, '/=/model/Honorlist/w/\'' + district + '\'');
             if (res[0])
-                openresty.putByGet('/=/model/Honorlist/w/' + district, { user: captchaUser, captcha: captchaValidation }, { c: new_c });
+                openresty.putByGet('/=/model/Honorlist/w/' + district, { _user: captchaUser, _captcha: captchaValidation }, { c: new_c });
             else
-                openresty.postByGet('/=/model/Honorlist/~/~', { user: captchaUser, captcha: captchaValidation }, { w: district, c: new_c });
+                openresty.postByGet('/=/model/Honorlist/~/~', { _user: captchaUser, _captcha: captchaValidation }, { w: district, c: new_c });
         }
     };
     openresty.get('/=/model/Honorlist/w/' + district);

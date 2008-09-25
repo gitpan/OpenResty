@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.004000';
+our $VERSION = '0.004001';
 
 use strict;
 use warnings;
@@ -51,8 +51,8 @@ our %OpMap = (
 );
 
 our %ext2dumper = (
-    '.yml' => \&YAML::Syck::Dump,
-    '.yaml' => \&YAML::Syck::Dump,
+    '.yml' => sub { _utf8_on($_[0]); YAML::Syck::Dump($_[0]); },
+    '.yaml' => sub { _utf8_on($_[0]); YAML::Syck::Dump($_[0]); },
     '.js' => sub { _utf8_on($_[0]); $JsonXs->encode($_[0]) },
     '.json' => sub { _utf8_on($_[0]); $JsonXs->encode($_[0]) },
 );
@@ -603,11 +603,6 @@ sub last_insert_id {
     $Backend->last_insert_id(@_);
 }
 
-sub emit_success {
-    my $self = shift;
-    return $self->emit_data( { success => 1 } );
-}
-
 sub emit_error {
     my $self = shift;
     my $msg = shift;
@@ -641,7 +636,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.4.0 released on September 9, 2008.
+This document describes OpenResty 0.4.1 released on September 25, 2008.
 
 =head1 DESCRIPTION
 
