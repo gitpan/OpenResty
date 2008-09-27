@@ -1,0 +1,13 @@
+This is the source for the blog administration site http://openresty.org/blogadmin/
+
+How to setup the site:
+
+    $ sudo cpan Jemplate Template
+    $ make
+    $ firefox out/index.html &
+
+Note that you need the whole OpenResty source tree to build this site.
+Because some of the .js files are copied over from ../../clients/js/
+and somewhere else :)
+
+Note that, this BlogAdmin site is only supposed to work with the blog app under ../Blog/
