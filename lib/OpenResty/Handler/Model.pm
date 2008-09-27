@@ -183,7 +183,10 @@ sub POST_model_column {
     my ($self, $openresty, $bits) = @_;
     my $model = $bits->[1];
     my $col = $bits->[2];
-    my $data = $openresty->{_req_data};
+    my $data = _HASH($openresty->{_req_data}) or
+        die "Value must be a HASH.\n";
+
+    # XXX has_model check?
 
     my $num = $self->column_count($openresty, $model);
 
@@ -211,7 +214,7 @@ sub POST_model_column {
         } :required :nonempty
     |]
 
-    if ($col eq 'id') {
+    if (lc($col) eq 'id') {
         die "Column id is reserved.";
     }
 
@@ -301,8 +304,6 @@ sub PUT_model_column {
     }
 
     if (defined $label) {
-        _STRING($label) or die "Lable must be a non-empty string: ",
-            $OpenResty::Dumper->($label);
         $update_meta->set(label => Q($label));
     }
 
@@ -334,7 +335,7 @@ sub PUT_model_column {
 
     my $res = $openresty->do($sql);
 
-    return { success => $res ? 1 : 0 };
+    return { success => 1 };
 }
 
 sub DELETE_model_column {
@@ -348,12 +349,14 @@ sub DELETE_model_column {
     }
     my $sql = '';
 
-    if($col eq '~') {
+    if ($col eq '~') {
          $openresty->warning("Column \"id\" is reserved.");
-     my $columns = $self->get_model_col_names($openresty, $model);
-     for my $c (@$columns) {
-        $sql .= "delete from _columns where model = '$model' and name='$c';" .
-                      "alter table \"$model\" drop column \"$c\" restrict;";
+         my $columns = $self->get_model_col_names($openresty, $model);
+         for my $c (@$columns) {
+             $sql .= [:sql|
+                delete from _columns where model = $model and name=$c;
+                alter table $sym:model drop column $sym:c restrict;
+            |];
          }
     } else {
         $sql = "delete from _columns where model='$model' and name='$col'; alter table \"$model\" drop column \"$col\" restrict;";
@@ -435,7 +438,7 @@ sub new_model {
     [:validator|
         $data ~~
         {
-            name: IDENT :to($model),
+            name: IDENT :required :to($model),
             description: STRING :nonempty :required :to($desc),
             columns: [
                 {
@@ -605,7 +608,7 @@ sub get_tables {
     #my ($self, $openresty, $user) = @_;
     my ($self, $openresty) = @_;
     my $sql = [:sql| select name from _models |];
-    return $openresty->select("$sql");
+    return $openresty->select($sql);
 }
 
 sub model_count {
@@ -1003,7 +1006,7 @@ sub alter_model {
         $data ~~
         {
             name: IDENT :to($new_model),
-            description: STRING :nonempty :required :to($desc),
+            description: STRING :nonempty :to($desc),
         } :required :nonempty
     |]
 

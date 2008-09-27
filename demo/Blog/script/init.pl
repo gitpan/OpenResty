@@ -41,6 +41,7 @@ $resty->login($user, $password);
 $resty->delete("/=/role/Public/~/~");
 $resty->delete("/=/role");
 $resty->delete("/=/view");
+$resty->delete("/=/action");
 $resty->delete("/=/feed");
 
 if ($resty->has_model('Post')) {
@@ -290,8 +291,64 @@ $resty->post(
 );
 
 $resty->post(
+    '/=/action/GetSidebar',
+    {
+        description => "Get sidebar",
+        parameters => [
+            { name => 'year', type => 'literal' },
+            { name => 'month', type => 'literal' },
+        ],
+        definition => q{
+            GET '/=/view/PostsByMonth/~/~?' || 'year=' || $year || '&month=' || $month;
+            GET '/=/view/RecentPosts/limit/6';
+            GET '/=/view/RecentComments/limit/6';
+            GET '/=/view/PostCountByMonths/count/12';
+        },
+    }
+);
+
+$resty->post(
+    '/=/action/GetFullPost',
+    {
+        description => "Get full post (with the navigator and comments",
+        parameters => [
+            { name => 'id', type => 'literal' },
+        ],
+        definition => q{
+            GET '/=/model/Post/id/' || $id;
+            GET '/=/view/PrevNextPost/current/' || $id;
+            GET '/=/model/Comment/post/' || $id;
+        },
+    }
+);
+
+$resty->post(
+    '/=/action/NewComment',
+    {
+        description => "Get full post (with the navigator and comments",
+        parameters => [
+            { name => 'sender', type => 'literal' },
+            { name => 'email', type => 'literal' },
+            { name => 'url', type => 'literal' },
+            { name => 'body', type => 'literal' },
+            { name => 'post_id', type => 'literal' },
+        ],
+        definition => q{
+            POST '/=/model/Comment/~/~'
+            { sender: $sender, email: $email, url: $url, body: $body, post: $post_id };
+            update Post set comments = comments + 1 where id = $post_id;
+        },
+    }
+);
+
+
+$resty->post(
     '/=/role/Public/~/~',
     [
+        { method => "GET", url => '/=/action/GetSidebar/~/~' },
+        { method => "GET", url => '/=/action/GetFullPost/~/~' },
+        { method => "POST", url => '/=/action/NewComment/~/~' },
+
         { method => "GET", url => '/=/model/Post/~/~' },
         { method => "GET", url => '/=/model/Comment/~/~' },
 

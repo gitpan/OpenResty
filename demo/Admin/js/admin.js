@@ -2,6 +2,7 @@ var itemsPerPage = 20;
 var sessionCookie = 'admin_session';
 var serverCookie  = 'admin_server';
 var userCookie    = 'admin_user';
+var cachedModelCount = {};
 
 var openresty = null;
 
@@ -203,16 +204,22 @@ function getModelRows (name, page, pat) {
 
 function getPager (name, page, prefix, suffix) {
     setStatus(true, 'getPager');
-    openresty.callback = function (res) {
-        renderPager(res, page, prefix, suffix);
-    };
-    openresty.postByGet(
-        '/=/action/RunView/~/~',
-        "select count(*) as count from " + name
-    );
+    var count = cachedModelCount[name];
+    if (count == null) {
+        openresty.callback = function (res) {
+            renderPager(res, page, prefix, suffix, name);
+        };
+        openresty.postByGet(
+            '/=/action/RunView/~/~',
+            "select count(*) as count from " + name
+        );
+    } else {
+        //alert("Hit cache count: " + count);
+        renderPager([{count: count}], page, prefix, suffix, name);
+    }
 }
 
-function renderPager (res, page, prefix, suffix) {
+function renderPager (res, page, prefix, suffix, model) {
     //alert("Render pager: " + JSON.stringify(res));
     setStatus(false, 'getPager');
     if (!openresty.isSuccess(res)) {
@@ -220,6 +227,7 @@ function renderPager (res, page, prefix, suffix) {
         return;
     }
     var count = res[0].count;
+    cachedModelCount[model] = count;
     $(".total-rows").html('For total <b>' + res[0].count + '</b> rows.');
     var pageCount = Math.ceil(parseInt(count) / itemsPerPage);
     //.processalert(pageCount);
@@ -330,10 +338,8 @@ function deleteModelRow (model, id, nextPage) {
     openresty.callback = function (res) {
         afterDeleteModelRow(res, model, id, nextPage);
     };
-    // we need a 0 timeout here to workaround an IE bug:
-    setTimeout(function () {
-        openresty.del("/=/model/" + model + "/id/" + id);
-    }, 0);
+    delete cachedModelCount[model];
+    openresty.del("/=/model/" + model + "/id/" + id);
 }
 
 function afterDeleteModelRow (res, model, id, nextPage) {
@@ -638,6 +644,7 @@ function deleteAllModelRows (model) {
     if (confirm("Are you sure to remove all the rows in model \""
                 + model + "\"?")) {
         openresty.callback = afterDeleteAllModelRows;
+        delete cachedModelCount[model];
         openresty.del("/=/model/" + model + "/~/~");
     }
 }
@@ -675,6 +682,7 @@ function createModelBulkRow (model) {
     var json = "[" + resLines.join(",") + "]";
     //alert(json);
     setStatus(true, 'createModelBulkRow');
+    delete cachedModelCount[model];
     openresty.formId = 'dummy-form';
     openresty.callback = afterCreateModelBulkRow;
     openresty.post("/=/model/" + model + "/~/~", JSON.parse(json));
@@ -698,10 +706,7 @@ function afterCreateModelBulkRow (res) {
 function getModelRowForm (model) {
     setStatus(true, 'getModelRowForm');
     openresty.callback = renderModelRowForm;
-    // we need a 0 timeout here to workaround an IE bug:
-    setTimeout(function () {
-        openresty.get('/=/model/' + model);
-    }, 0);
+    openresty.get('/=/model/' + model);
 }
 
 function renderModelRowForm (res) {
@@ -746,6 +751,7 @@ function createModelRow (model) {
         return false;
     }
     setStatus(true, 'createModelRow');
+    delete cachedModelCount[model];
     openresty.callback = afterCreateModelRow;
     openresty.formId = 'dummy-form';
     openresty.post(
@@ -769,5 +775,147 @@ function html2text (text) {
     text = text.replace(/>/g, '&gt;');
     text = text.replace(/"/g, '&quot;'); // " end quote for emacs
     return text;
+}
+
+function addOneMoreParam () {
+    //debug("HERE!");
+    $("#create-action-params").append(
+        '<table><tr><td><span class="param-inputs">' + Jemplate.process('param-inputs.tt') + "</span></td></tr></table>"
+    );
+    //alert("HERE!");
+        //alert("HERE!");
+    setTimeout( function () {
+        //alert($('.column-input-name:last').length);
+        $('.param-input-name:last')[0].focus();
+        //$('column-input :last')[0].focus();
+    }, 0 );
+}
+
+function createAction () {
+    var name = $("#create-action-name").val();
+    var desc = $("#create-action-desc").val();
+    var def = $("#create-action-def").val();
+    var params = [];
+    var parameters = document.getElementById('create-action-params');
+    if (parameters) {
+        try {
+            $(".param-inputs", parameters).each( function () {
+                var param = getParamSpec(this);
+                if (param) params.push(param);
+            } );
+        } catch (e) {
+            error(e);
+            return false;
+        }
+    } else {
+        error("parameters not found!");
+        return false;
+    }
+    var data = {
+        name: name,
+        description: desc,
+        parameters: params,
+        definition: def
+    };
+    //debug("JSON: " + JSON.stringify(data));
+    //return;
+    setStatus(true, "createAction");
+    openresty.callback = afterCreateAction;
+    openresty.postByGet(
+        '/=/action/~',
+        data
+    );
+    return false;
+}
+
+function afterCreateAction (res) {
+    setStatus(false, "createAction");
+    if (!openresty.isSuccess(res)) {
+        error("Failed to create action: " + res.error);
+    } else {
+        gotoNextPage('actions');
+    }
+}
+
+function getParamSpec (container) {
+    //alert("HERE!");
+    var col = {};
+    var found = false;
+    //debug(div);
+    $("input.param-input", container).each( function () {
+        var key = $(this).attr('resty_key');
+        //debug("Key: " + key);
+        if (!key) return;
+        var val = $(this).val();
+        if (val != '') {
+            col[key] = val;
+            found = true;
+        }
+    } );
+    return found ? col : null;
+}
+
+function deleteActionParam (action, param, nextPage) {
+    if (!confirm("Are you sure to delete parameter " + param +
+                " from action " + action + "?"))
+        return;
+    setStatus(true, 'deleteActionParam');
+    openresty.callback = function (res) {
+        afterDeleteActionParam(res, action, param, nextPage);
+    };
+    openresty.del("/=/action/" + action + "/" + param);
+}
+
+function afterDeleteActionParam (res, action, param, nextPage) {
+    setStatus(false, 'deleteActionParam');
+    if (!openresty.isSuccess(res)) {
+        error("Failed to delete parameter " + param + " from action " +
+                action + ": " + res.error);
+        return;
+    }
+    gotoNextPage(nextPage);
+}
+
+function addNewParam (action) {
+    $("li.add-param").html(
+        '<form onsubmit="return false;">' + Jemplate.process('param-inputs.tt') + '<input class="param-create-button" type="submit" value="Create" onclick="createParam(\'' + action + '\')"></input></form>'
+    );
+    setTimeout( function () {
+        //alert($('.column-input-name:last').length);
+        $('.param-input-name:last')[0].focus();
+        //$('column-input :last')[0].focus();
+    }, 0 );
+}
+
+function createParam (action) {
+    //alert("Creating column .column-inputsfor model " + model);
+    var data;
+    try {
+        data = getParamSpec(document);
+    } catch (e) {
+        error(e);
+        return false;
+    }
+    if (data == null) {
+        error("Parameter spec is empty.");
+        return false;
+    }
+    //alert("Col json: " + JSON.stringify(data));
+    setStatus(true, "createParam");
+    openresty.callback = afterCreateParam;
+    openresty.postByGet(
+        '/=/action/' + action + "/~",
+        data
+    );
+    return false;
+}
+
+function afterCreateParam (res) {
+    setStatus(false, "createParam");
+    if (!openresty.isSuccess(res)) {
+        error("Failed to add a new parameter: " + res.error);
+    } else {
+        gotoNextPage();
+    }
 }
 

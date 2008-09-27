@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.004002';
+our $VERSION = '0.005000';
 
 use strict;
 use warnings;
@@ -72,9 +72,9 @@ our %ext2importer = (
 );
 
 our $Ext = qr/\.(?:js|json|xml|yaml|yml)/;
-our ($Dumper, $Importer);
-$Dumper = $ext2dumper{'.js'};
-$Importer = $ext2importer{'.js'};
+#our $Dumper = 
+our $Dumper = $ext2dumper{'.js'};
+our $Importer = $ext2importer{'.js'};
 
 sub version {
     (my $ver = $OpenResty::VERSION) =~ s{^(\d+)\.(\d{3})(\d{3})$}{join '.', int($1), int($2), int($3)}e;
@@ -83,11 +83,8 @@ sub version {
 
 # XXX more data types...
 sub parse_data {
-    shift;
-    if (!$Importer) {
-        $Importer = $ext2importer{'.js'};
-    }
-    my $data = $Importer->($_[0]);
+    #shift;
+    my $data = $_[0]->{_importer}->($_[1]);
     _utf8_off($data);
     return $data;
 }
@@ -98,6 +95,8 @@ sub new {
         _cgi => $cgi,
         _charset => 'UTF-8',
         _call_level => $call_level,
+        _dumper => $Dumper,
+        _importer => $Importer,
     }, $class;
 }
 
@@ -129,7 +128,8 @@ sub init {
     }
 
     # cache the results of CGI::Simple::url_param
-    $self->{_url_params} = {};
+    #$self->{_url_params} = $self->{_url{};
+    my (%url_params, %builtin_params);
     my $cgi2 = bless {}, 'CGI::Simple';
     #die $ENV{'QUERY_STRING'};
     $cgi2->_parse_params( $ENV{'QUERY_STRING'} );
@@ -138,8 +138,15 @@ sub init {
     #warn Dumper($cgi2);
     for my $param ($cgi2->param) {
         #die $param;
-        $self->{_url_params}->{$param} = $cgi2->param($param);
+        if ($param =~ /^[A-Za-z]\w*$/) {
+            $url_params{$param} = $cgi2->param($param);
+        } elsif ($param =~ /^_\w+/) {
+            $builtin_params{$param} = $cgi2->param($param);
+        }
     }
+    $self->{_url_params} = \%url_params;
+    $self->{_builtin_params} = \%builtin_params;
+
     #### params: $self->{_url_params}
     #### use_cookie: $self->builtin_param('_use_cookie')
     #### session: $self->builtin_param('_session')
@@ -399,9 +406,9 @@ sub response {
     #warn $Dumper;
     #warn $ext2dumper{'.js'};
     $str =~ s/\n+$//s;
-    if (my $var = $self->{_var} and $Dumper eq $ext2dumper{'.js'}) {
+    if (my $var = $self->{_var} and $self->{_dumper} eq $ext2dumper{'.js'}) {
         $str = "$var=$str;";
-    } elsif (my $callback = $self->{_callback} and $Dumper eq $ext2dumper{'.js'}) {
+    } elsif (my $callback = $self->{_callback} and $self->{_dumper} eq $ext2dumper{'.js'}) {
         $str = "$callback($str);";
     }
 
@@ -434,8 +441,9 @@ sub response {
 sub set_formatter {
     my ($self, $ext) = @_;
     $ext ||= '.js';
-    $Dumper = $ext2dumper{$ext};
-    $Importer = $ext2importer{$ext};
+    #warn "Ext: $ext";
+    $self->{_dumper} = $ext2dumper{$ext};
+    $self->{_importer} = $ext2importer{$ext};
 }
 
 sub connect {
@@ -451,7 +459,7 @@ sub connect {
 sub emit_data {
     my ($self, $data) = @_;
     #warn "$data";
-    return eval { $Dumper->($data); }
+    return $self->{_dumper}->($data);
 }
 
 sub get_session {
@@ -491,7 +499,7 @@ sub has_role {
     return 'password' if $role eq 'Admin';
     return 'anonymous' if $role eq 'Public'; # shortcut...
     _IDENT($role) or
-        die "Bad role name: ", $OpenResty::Dumper->($role), "\n";
+        die "Bad role name: ", $self->dump($role), "\n";
 
 
     my $user = $self->current_user;
@@ -623,7 +631,13 @@ sub url_param {
     }
 }
 
-*builtin_param = \&url_param;
+sub builtin_param {
+    if (@_ > 1) {
+        $_[0]->{_builtin_params}->{$_[1]};
+    } else {
+        keys %{ $_[0]->{_builtin_params} };
+    }
+}
 
 1;
 __END__
@@ -636,7 +650,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.4.2 released on September 27, 2008.
+This document describes OpenResty 0.5.0 released on September 27, 2008.
 
 =head1 DESCRIPTION
 

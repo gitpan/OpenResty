@@ -11,6 +11,7 @@ var timer = null;
 var thisYear = null;
 var thisMonth = null;
 var thisDay = null;
+var cachedPostCountRes = null;
 
 var months = [
     null,
@@ -40,6 +41,7 @@ function debug (msg) {
 
 $.fn.postprocess = function (className, options) {
     return this.find("a[@href*='#']").each( function () {
+        //debug("HERE!");
         var href = $(this).attr('href');
         // We need the following hack because IE expands href to
         // absolute URL:
@@ -244,7 +246,7 @@ function getSearchResults (query, page) {
 
 function doPostSearch () {
     var query = $('#searchbox').val();
-    savedAndhor = null;
+    savedAnchor = null;
     var anchor = '#search/1/' + query;
     location.hash = anchor;
     //alert(location.hash);
@@ -267,18 +269,39 @@ function getPagerForSearch (query, page) {
 
 function getPager (page) {
     setStatus(true, 'renderPager');
-    openresty.callback = function (res) { renderPager(res, page, 'posts/', ''); };
-    openresty.get('/=/view/RowCount/model/Post');
+    if (cachedPostCountRes) {
+        //alert("Hit!");
+        renderPager(cachedPostCountRes, page, 'posts/', '');
+    } else {
+        openresty.callback = function (res) { renderPager(res, page, 'posts/', ''); };
+        openresty.get('/=/view/RowCount/model/Post');
+    }
 }
 
 function getSidebar () {
-    getCalendar();
-    getRecentPosts();
-    getRecentComments();
-    getArchiveList();
+    //getRecentPosts();
+    //getRecentComments();
+    //getArchiveList();
+    setStatus(true, 'renderSidebar');
+    openresty.callback = function (res) { renderSidebar(res) };
+    openresty.get('/=/action/GetSidebar/~/~', { year: thisYear, month: thisMonth + 1 });
 }
 
-function getCalendar (year, month) {
+function renderSidebar (res) {
+    setStatus(false, 'renderSidebar');
+    getCalendar(thisYear, thisMonth, res[0]);
+
+    setStatus(true, 'renderRecentPosts');
+    renderRecentPosts(res[1], 0, 6);
+
+    setStatus(true, 'renderRecentComments');
+    renderRecentComments(res[2], 0, 6);
+
+    setStatus(true, 'getArchiveList');
+    renderArchiveList(res[3], 0, 12);
+}
+
+function getCalendar (year, month, posts) {
     if (year == undefined || month == undefined) {
         year = thisYear;
         month = thisMonth;
@@ -311,13 +334,19 @@ function getCalendar (year, month) {
     ).postprocess();
 
     // We need this 0 timeout hack for IE 6 :(
-    setTimeout( function () {
+    if (posts) {
+        //alert("Shortcut!");
         setStatus(true, 'renderPostsInCalendar');
-        openresty.callback = function (res) {
-            renderPostsInCalendar(res, year, month);
-        };
-        openresty.get('/=/view/PostsByMonth/~/~', { year: year, month: month + 1 });
-    }, 0 );
+        renderPostsInCalendar(posts, year, month);
+    } else {
+        setTimeout( function () {
+            setStatus(true, 'renderPostsInCalendar');
+            openresty.callback = function (res) {
+                renderPostsInCalendar(res, year, month);
+            };
+            openresty.get('/=/view/PostsByMonth/~/~', { year: year, month: month + 1 });
+        }, 0 );
+    }
 }
 
 function renderPostsInCalendar (res, year, month) {
@@ -429,7 +458,7 @@ function postComment (form) {
     data.email = $("#comment-email").val();
     data.url = $("#comment-url").val();
     data.body = $("#comment-text").val();
-    data.post = $("#comment-for").val();
+    data.post_id = $("#comment-for").val();
     //alert(JSON.stringify(data));
     if (!data.sender) {
         error("Name is required.");
@@ -447,8 +476,8 @@ function postComment (form) {
     //openresty.purge();
     setStatus(true, 'afterPostComment');
     openresty.callback = afterPostComment;
-    //openresty.formId = 'comment-form';
-    openresty.postByGet('/=/model/Comment/~/~', data);
+    openresty.formId = 'comment-form';
+    openresty.post('/=/action/NewComment/~/~', data);
     return false;
 }
 
@@ -466,22 +495,11 @@ function afterPostComment (res) {
 
         //debug(JSON.stringify(res));
         var commentId;
-        var match = res.last_row.match(/\d+$/);
+        var match = res[0].last_row.match(/\d+$/);
         if (match.length) commentId = match[0];
         location.hash = 'post-' + postId + ':' +
             (commentId ? 'comment-' + commentId : 'comments');
-        openresty.callback = function (res) {
-            if (!openresty.isSuccess(res)) {
-                error("Failed to increment the comment count for post " +
-                    postId + ": " + res.error);
-            } else {
-                spans.text(commentCount + 1);
-            }
-        };
-        openresty.putByGet(
-            '/=/model/Post/id/' + postId,
-            { comments: commentCount + 1 }
-        );
+        spans.text(commentCount + 1);
         getRecentComments(0);
     }
 }
@@ -492,7 +510,7 @@ function getPost (id) {
     //alert($(".blog-top").attr('id'));
     setStatus(true, 'renderPost');
     openresty.callback = renderPost;
-    openresty.get('/=/model/Post/id/' + id);
+    openresty.get('/=/action/GetFullPost/id/' + id);
 }
 
 function renderPost (res) {
@@ -501,22 +519,19 @@ function renderPost (res) {
     if (!openresty.isSuccess(res)) {
         error("Failed to render post: " + res.error);
     } else {
-        var post = res[0];
+        var post = res[0][0];
         //if (!post) return;
         $("#beta-inner.pkg").html(
             Jemplate.process('post-page.tt', { post: post })
         ).postprocess();
 
-        openresty.callback = function (res) {
-            renderPrevNextPost(post.id, res);
-        };
+        renderPrevNextPost(post.id, res[1]);
         //debug(JSON.stringify(post));
-        openresty.get('/=/view/PrevNextPost/current/' + post.id);
 
         setStatus(true, 'renderComments');
-        openresty.callback = renderComments;
-        openresty.get('/=/model/Comment/post/' + post.id);
+        renderComments(res[2]);
         $(".pager").html('');
+        resetAnchor();
     }
 }
 
@@ -529,7 +544,7 @@ function renderPrevNextPost (currentId, res) {
         $(".content-nav").html(
             Jemplate.process('nav.tt', { posts: res, current: currentId })
         ).postprocess();
-        resetAnchor();
+        //resetAnchor();
     }
 }
 
@@ -542,7 +557,7 @@ function renderComments (res) {
         $(".comments-content").html(
             Jemplate.process('comments.tt', { comments: res })
         );
-        resetAnchor();
+        //resetAnchor();
         //setTimeout( function () { alert("Hi"); resetAnchor(); }, 1000 );
     }
 }
@@ -557,7 +572,7 @@ function renderPostList (res) {
             Jemplate.process('post-list.tt', { post_list: res })
         ).postprocess();
     }
-    resetAnchor();
+    //resetAnchor();
 }
 
 function renderSearchResults (res, query) {
@@ -580,6 +595,7 @@ function renderPager (res, page, prefix, suffix) {
         error("Failed to render pager: " + res.error);
     } else {
         //debug("before rendering pager...");
+        cachedPostCountRes = res;
         var pageCount = Math.ceil(parseInt(res[0].count) / itemsPerPage);
         if (pageCount < 2) return;
         //debug("before redering pager (2)...");
