@@ -28,7 +28,7 @@ sub level2name {
 sub check_type {
     my $type = shift;
     if ($type !~ m{^ \s*
-                (
+                ( (?:
                     smallint |
                     bigint |
                     cidr |
@@ -49,6 +49,7 @@ sub check_type {
                     ltree |
                     line |
                     point |
+                    hstore |
                     lseg |
                     path |
                     date |
@@ -56,7 +57,7 @@ sub check_type {
                         (?: \s* with(?:out)? \s+ time \s+ zone)? |
                     interval (?: \s* \( \s* \d+ \s* \) )? |
                     prefix_range
-                ) \s* $
+                ) \s* (?:\[ \d* \])? ) \s* $
             }x) {
         die "Bad column type: $type\n";
     }
@@ -214,6 +215,9 @@ sub POST_model_column {
         } :required :nonempty
     |]
 
+    #warn "label is $label\n";
+    #warn "\$label is utf8? ", (is_utf8($label) ? 1: 0), "\n";
+
     if (lc($col) eq 'id') {
         die "Column id is reserved.";
     }
@@ -229,7 +233,10 @@ sub POST_model_column {
         #### default exists!
         $default = $data->{default};
         if (defined $default) {
-            $json_default = $OpenResty::JsonXs->encode($default);
+            #warn "\$default is utf8? ", (is_utf8($default) ? 1: 0), "\n";
+            $json_default = OpenResty::json_encode($default);
+            #warn "json default: $json_default\n";
+            #warn "\$json_default is utf8? ", (is_utf8($json_default) ? 1: 0), "\n";
             $default = $self->process_default($openresty, $default);
         } else {
             $default = 'null';
@@ -238,16 +245,22 @@ sub POST_model_column {
         undef $default;
     }
 
+    #warn "label 2 is $label\n";
+    #warn "\$label 2 is utf8? ", (is_utf8($label) ? 1: 0), "\n";
+
     my $sql = [:sql|
         insert into _columns (name, label, type, model, "default")
             values( $col, $label, $type, $model, $json_default);
     |];
+    #warn "SQL 0 is $sql\n";
     #### $default
+    #warn "\$default is utf8? ", (is_utf8($default) ? 1: 0), "\n";
 
     $sql .= [:sql|
         alter table $sym:model
         add column $sym:col $kw:type |] .
         (defined $default ? [:sql| default ($kw:default); |] : ';');
+        #warn "SQL: $sql";
 
     my $res = $openresty->do($sql);
 
@@ -311,7 +324,7 @@ sub PUT_model_column {
         my $default = $data->{default};
         if (defined $default) {
             #warn "DEFAULT: $default\n";
-            my $json_default = $OpenResty::JsonXs->encode($default);
+            my $json_default = OpenResty::json_encode($default);
             $default = $self->process_default($openresty, $default);
 
             $update_meta->set(QI('default') => Q($json_default));
@@ -495,7 +508,8 @@ sub new_model {
 
         my $json_default;
         if (defined $default) {
-            $json_default = $OpenResty::JsonXs->encode($default);
+            $json_default = OpenResty::json_encode($default);
+            #warn "JSON_DEFAULT: ", utf8::is_utf8($json_default), "\n";
             $default = $self->process_default($openresty, $default);
             # XXX
             $sql .= " default ($default)";
@@ -876,13 +890,22 @@ sub select_records {
         }
         $select->select('id', QI(@$cols));
         if ($user_col eq '~') {
+            if ($op ne '=' && $op ne 'like' ) {
+                die "_op value not supported for values other than contains and eq.\n";
+            }
             # XXX
             $select->op('or');
             for my $col (@$cols) {
-                $select->where(qq{"$col"::text} => $op => Q($val));
+                $select->where(QI($col).'::text' => $op => Q($val));
             }
         } else {
-            $select->where(QI($user_col) => $op => Q($val));
+            my $tmp_col;
+            if ($op eq 'like') {
+                $tmp_col = QI($user_col) . '::text';
+            } else {
+                $tmp_col = QI($user_col);
+            }
+            $select->where($tmp_col => $op => Q($val));
         }
     } else {
         $select->select($user_col);
@@ -933,7 +956,7 @@ sub delete_records {
         die "Model \"$model\" not found.\n";
     }
     my $cols = $self->get_model_col_names($openresty, $model);
-    if (lc($user_col) ne 'id') {
+    if (lc($user_col) ne 'id' && $user_col ne '~') {
         my $found = 0;
         for my $col (@$cols) {
             if ($col eq $user_col) { $found = 1; last; }
@@ -943,9 +966,28 @@ sub delete_records {
     #my $flds = join(",", @$cols);
     my $sql;
     if (defined $val) {
-        $sql = "delete from \"$model\" where \"$user_col\"=" . Q($val);
+        my $op = $openresty->builtin_param('_op') || 'eq';
+        $op = $OpenResty::OpMap{$op};
+        if ($op eq 'like') {
+            $val = "%$val%";
+        }
+        if ($user_col eq '~') {
+            if ($op ne '=' && $op ne 'like' ) {
+                die "_op value not supported for values other than contains and eq.\n";
+            }
+            $sql .= [:sql|delete from $sym:model where 1=0|];
+            for my $col (@$cols) {
+                $sql .= [:sql| or $sym:col::text $kw:op $val|];
+            }
+        } else {
+            if ($op eq 'like') {
+                $sql .= [:sql|delete from $sym:model where $sym:user_col::text $kw:op $val|]; 
+            } else {
+                $sql .= [:sql|delete from $sym:model where $sym:user_col $kw:op $val|];
+            }
+        }
     } else {
-        $sql = "delete from \"$model\"";
+        $sql = [:sql|delete from $sym::$model|];
     }
 
     my $retval = $openresty->do($sql);
@@ -955,7 +997,7 @@ sub delete_records {
 sub update_records {
     my ($self, $openresty, $model, $user_col, $val, $data) = @_;
     my $cols = $self->get_model_col_names($openresty, $model);
-    if ($user_col ne 'id' && $user_col ne '~') {
+    if (lc($user_col) ne 'id' && $user_col ne '~') {
         my $found = 0;
         for my $col (@$cols) {
             if ($col eq $user_col) { $found = 1; last; }
@@ -978,8 +1020,30 @@ sub update_records {
     }
 
     if (defined $val and $val ne '~') {
+        my $op = $openresty->builtin_param('_op') || 'eq';
+        $op = $OpenResty::OpMap{$op};
+        if ($op eq 'like') {
+            $val = "%$val%";
+        }
+        if ($user_col eq '~') {
+            if ($op ne '=' && $op ne 'like' ) {
+                die "_op value not supported for values other than contains and eq.\n";
+            }
+            $update->op('or');
+            for my $col (@$cols) {
+                $update->where(QI($col).'::text' => $op => Q($val));
+            }
+        } else {
+            my $tmp_col;
+            if ($op eq 'like') {
+                $tmp_col = QI($user_col) . '::text';
+            } else {
+                $tmp_col = QI($user_col);
+            }
+            $update->where($tmp_col => $op => Q($val));
+        }
         # XXX SQL injection point
-        $update->where(QI($user_col) => Q($val));
+        # $update->where(QI($user_col) => Q($val));
     }
     #warn "VAL:  $val";
     #warn "is_utf8:", is_utf8($val), "\n";

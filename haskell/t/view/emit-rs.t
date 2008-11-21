@@ -680,3 +680,41 @@ Query [Select [AnyColumn],From [Alias (FuncCall (Symbol "getquery") [Variable (1
 --- out
 select * from "getquery"($spell) as ("query" text, "pop" integer, "des" text) limit $t
 
+
+
+=== TEST 73: builtin vars
+--- in
+select $_ACCOUNT as account, $_ROLE as role
+--- ast
+Query [Select [Alias (Variable (1,9) "_ACCOUNT") (Symbol "account"),Alias (Variable (1,31) "_ROLE") (Symbol "role")]]
+--- out
+select $_ACCOUNT as "account", $_ROLE as "role"
+
+
+
+=== TEST 74: is null
+--- in
+select * from Foo where col is null
+--- out
+select * from "Foo" where "col" is null
+
+
+
+=== TEST 75: is not null
+--- in
+select * from Foo where col is not null
+--- out
+select * from "Foo" where "col" is not null
+
+
+=== TEST 76: array indexing
+--- in
+select m.mid, m.title,
+    (regexp_split_to_array(m.blob_client_data1, ' '))[58] as subject,
+    (regexp_split_to_array(m.blob_client_data1, ' '))[69] as article
+from mob as m,
+    (select * from yid_lookup as y where y.yuid like '%' || $yuid || '%') as t
+where m.yid = t.id;
+--- out
+select "m"."mid", "m"."title", ("regexp_split_to_array"("m"."blob_client_data1", ' '))[58] as "subject", ("regexp_split_to_array"("m"."blob_client_data1", ' '))[69] as "article" from "mob" as "m", select * from "yid_lookup" as "y" where "y"."yuid" like (('%' || $yuid) || '%') as "t" where "m"."yid" = "t"."id"
+

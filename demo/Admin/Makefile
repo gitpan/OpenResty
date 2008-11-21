@@ -5,6 +5,7 @@ all:
 	-mkdir out
 	-cp ../../clients/js/*.js out/
 	-rm template/elem/*.tt~
+	-cp image/*.* out/
 	jemplate --runtime > out/admin-jemplate.js
 	jemplate --compile template/elem/ >> out/admin-jemplate.js
 	tpage --include_path=template template/index.tt > out/index.html
@@ -19,7 +20,7 @@ all:
 	cp js/*.js out/
 	cp js/*/*.js out/
 	cp css/*.css out/
-	cp image/*.* out/
+	-cp image/*.* out/
 	tar cf site-binary.tar out
 	gzip -q --best site-binary.tar
 	mv site-binary.tar.gz out/

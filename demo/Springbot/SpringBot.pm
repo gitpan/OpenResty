@@ -110,7 +110,7 @@ sub said {
     #warn "Hit!\n";
     #$say->("[$enc]: $text\n");
     #}
-    $self->process_msg($text, $say, $sender);
+    $self->process_msg($text, $say, $sender) if $sender !~ /bot$/i;
     #$self->log($e->{channel}, $e->{who}, $e->{raw_body});
     return undef;
 }
@@ -220,6 +220,11 @@ sub process_url {
             ### $title
             $title = decode($enc, $title);
             ### $enc
+            $title =~ s/\&nbsp;/ /g;
+            $title =~ s/\&lt;/</g;
+            $title =~ s/\&gt;/>/g;
+            $title =~ s/\&quot;/"/g;
+            $title =~ s/\&amp;/\&/g;
             $say->($title);
         }
     } else {
@@ -345,17 +350,18 @@ sub find_employee {
         eval {
             $res = $Resty->get(
                 $url,
-                { _op => 'contains', _limit => 3 }
+                { _op => 'contains', _limit => 3, _order_by => 'order_id:desc' }
             );
         };
         if ($@ =~ /Login required/i) {
             $Resty->login($self->resty_account, $self->resty_password);
             $res = $Resty->get(
                 $url,
-                { _op => 'contains', _limit => 3 }
+                { _op => 'contains', _limit => 3, _order_by => 'order_id:desc' }
             );
         }
         if (_ARRAY($res)) {
+            delete $_->{order_id} for @$res;
             my $s = res2table($res);
             $say->($s);
         } else {

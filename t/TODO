@@ -16,3 +16,8 @@ Old TODOs:
 * [bug] PUT /=/role/Foo/id/32 does not work as expected.
 * order in ACL rule listing
 
+* model columns' default values contain UTF-8 chars.
+* action definition contains UTF-8 chars.
+* insert rows - POST an empty list?
+* not_null
+

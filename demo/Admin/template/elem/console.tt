@@ -1,0 +1,84 @@
+<!-- block begin -->
+<div class="ttl">
+    <span class="text">
+        HTTP Console
+    </span>
+</div>
+
+<form method="post" id="http-console-dummy-form" style="display: none"></form>
+<div class="listcon">
+<form onsubmit="doHttpRequest(this);return false;">
+<ul>
+<li>
+    <select id="http-console-meth">
+    [%- FOREACH meth IN ['GET', 'POST', 'PUT', 'DELETE'] %]
+        <option value ="[% meth %]">[% meth %]</option>
+    [%- END %]
+    </select>
+    &nbsp;
+    /=/<input id="http-console-url" type="text" style="width: 40em;"></input>
+</li>
+<li>
+    <label for="http-console-body">Content</label><br/>
+    <textarea id="http-console-body" rows="5" cols="50"></textarea>
+</li>
+<li>
+    <input type="submit" value="Go!" style="width: 5em"></input>
+</li>
+<li>
+    <label for="http-console-out"><b>Response</b></label><br/>
+    <pre id="http-console-out"></pre>
+</li>
+</ul>
+</form>
+</div>
+
+<!--
+<div class="ttl">
+    <span class="text">
+        RunView Console
+    </span>
+</div>
+
+<div class="listcon">
+<ul>
+<li>
+    <textarea rows="8" cols="30"></textarea>
+</li>
+</ul>
+</div>
+-->
+
+<div class="ttl">
+    <span class="text">
+        Action Console
+    </span>
+    <p>SQL update/select/delete statements, as well as HTTP commands, are all allowed here, separated by semicolons. </p>
+</div>
+
+<div class="listcon">
+<form onsubmit="runActionConsole(this.console, this.format);return false;">
+<ul>
+<li>
+    <div id="run-action-console-error" class="error"></div>
+    <textarea name="console" rows="8" cols="60"></textarea><br/>
+</li>
+<li>
+    <label>Data Format</lable>
+    <select name="format">
+    [%- FOREACH fmt IN ['YAML', 'JSON'] %]
+        <option value ="[% fmt | lower %]">[% fmt %]</option>
+    [%- END %]
+    </select>
+<li>
+<li>
+    <input type="submit" value="Go!" style="width: 5em"></input>
+</li>
+<li>
+    <label for="action-console-out"><b>Response</b></label><br/>
+    <pre id="action-console-out"></pre>
+</li>
+</ul>
+</form>
+</div>
+

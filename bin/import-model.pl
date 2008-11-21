@@ -9,6 +9,7 @@ use Params::Util qw( _HASH );
 use JSON::XS ();
 use WWW::OpenResty::Simple;
 use Data::Dumper;
+use Data::Structure::Util qw(_utf8_off);
 
 sub usage {
     my $progname;
@@ -27,6 +28,8 @@ Options:
     --no-id            Skipped the id field in the records being imported
     --skip N           Skipped the first N rows in the input file (default 0)
     --add-id N          Add ID started from N (default 1)
+    --update-col <col>  Update records according to the column given
+    --ignore-dup-error  Ignore dupliciate errors
 _EOC_
 }
 
@@ -34,6 +37,7 @@ my $server = 'api.openresty.org';
 my $step = 20;
 my $skip = 0;
 my $add_id = 1;
+my $update_col;
 GetOptions(
     'help|h'   => \(my $help),
     'user|u=s' => \(my $user),
@@ -47,6 +51,7 @@ GetOptions(
     'skip=i' => \$skip,
     'add-id=i' => \$add_id,
     'ignore-dup-error' => \(my $ignore_dup_error),
+    'update-col=s' => \$update_col,
 ) or die usage();
 
 if ($help) { print usage() }
@@ -62,6 +67,8 @@ my $openresty = WWW::OpenResty::Simple->new(
 $openresty->login($user, $password);
 if ($reset) { $openresty->delete("/=/model/$model/~/~"); }
 
+if ($update_col) { $step = 1 }
+
 my @rows;
 my $inserted = 0;
 local $| = 1;
@@ -72,7 +79,7 @@ while (<>) {
     my $row = $json_xs->decode($_);
 
     if (!defined $row->{id}) {
-        warn "ADDing id...\n";
+        #warn "ADDing id...\n";
         $row->{id} = $add_id++;
     }
     if ($no_id) {
@@ -82,7 +89,7 @@ while (<>) {
     if (@rows % $step == 0) {
         $inserted += insert_rows(\@rows);
         @rows = ();
-        print STDERR "\rInserted rows: $inserted (row $.)";
+        print STDERR "\r", ($update_col ? "Updated" : "Inserted"), " rows: $inserted (row $.)";
     }
 }
 
@@ -94,6 +101,14 @@ print STDERR "\n$inserted row(s) inserted.\n";
 sub insert_rows {
     my $rows = shift;
     my $res;
+    if ($update_col) {
+        eval {
+            $res = $openresty->delete(
+                "/=/model/$model/$update_col/" . url_encode($rows[0]->{$update_col})
+            );
+        };
+        if ($@) { warn $@, "\n" };
+    }
     eval {
         $res = $openresty->post(
             "/=/model/$model/~/~",
@@ -106,6 +121,13 @@ sub insert_rows {
     }
     #warn Dumper($res);
     return $res->{rows_affected} || 0;
+}
+
+sub url_encode {
+    my $s = shift;
+    _utf8_off($s);
+    $s =~ s/[^\w\-\.\@]/sprintf("%%%2.2x",ord($&))/eg;
+    $s;
 }
 
 warn "\nFor tatal $inserted records inserted.\n";

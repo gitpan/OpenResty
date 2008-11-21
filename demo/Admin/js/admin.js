@@ -1,8 +1,15 @@
-var itemsPerPage = 20;
+var itemsPerPage = 10;
 var sessionCookie = 'admin_session';
 var serverCookie  = 'admin_server';
 var userCookie    = 'admin_user';
 var cachedModelCount = {};
+var linesPerBulk = 20;
+var cancelInsertRows = false;
+var cancelDumpModelRows = false;
+
+var dumpedModelRows = null;
+var dumpModelRowsLimit = 50000;
+var dumpModelRowsKeys = null;
 
 var openresty = null;
 
@@ -32,7 +39,7 @@ $.fn.postprocess = function (className, options) {
                 var data = $(this).attr('resty_value');
                 var type = $(this).attr('resty_type');
                 //debug(type);
-                if ((data && data.length > 128) || /\n/.test(data)) {
+                if ((data && data.length > 30) || /\n/.test(data)) {
                     type = 'textarea';
                 }
                 if (!type) type = 'text';
@@ -41,7 +48,7 @@ $.fn.postprocess = function (className, options) {
                     settings.width = 600;
                     settings.height = 200;
                 } else {
-                    settings.width = '15em';
+                    settings.width = data ? (data.length + 5 + 'em') : '5em';
                 }
                 settings.data = data;
                 settings.type = type;
@@ -82,7 +89,7 @@ function plantEditableHook (node, settings) {
         width: settings.width || 130,
         height: settings.height || 20,
         data: settings.data || '',
-        tooltip   : 'Click to edit'
+        tooltip   : ''
     } );
 }
 
@@ -189,16 +196,17 @@ function init () {
     getVersionInfo();
 }
 
-function getModelRows (name, page, pat) {
+function getModelRows (name, col, op, page, pat) {
     setStatus(true, 'renderModelRows');
     if (!page) page = 1;
-    openresty.callback = function (res) { renderModelRows(res, name, page, pat); };
+    openresty.callback = function (res) { renderModelRows(res, name, col, op, page, pat); };
     if (/\%[A-Za-z0-9]{2}/.test(pat)) {
         pat = decodeURIComponent(pat);
     }
     openresty.get(
-        '/=/model/' + name + '/~/' + pat,
-        { _offset: itemsPerPage * (page - 1), _count: itemsPerPage, _order_by: 'id:desc', _op: 'contains' }
+        '/=/model/' + name + '/' +
+        (col == '_all' ? '~' : col) + '/' + encodeURIComponent(pat),
+        { _offset: itemsPerPage * (page - 1), _count: itemsPerPage, _order_by: 'id:desc', _op: op }
     );
 }
 
@@ -246,7 +254,7 @@ function renderPager (res, page, prefix, suffix, model) {
 //////////////////////////////////////////////////////////////////////
 // static handlers (others can be found in template/js/handlers.tt)
 
-function renderModelRows (res, model, page, pat) {
+function renderModelRows (res, model, col, op, page, pat) {
     setStatus(false, 'renderModelRows');
     if (!openresty.isSuccess(res)) {
         error("Failed to get model rows: " + res.error);
@@ -258,10 +266,84 @@ function renderModelRows (res, model, page, pat) {
     $("#main").html(
         Jemplate.process(
             'model-rows.tt',
-            { model: model, rows: res, pat: pat }
+            { model: model, column: col, operator: op, rows: res, pat: pat }
         )
     ).postprocess();
-    getPager(model, page, 'modelrows/' + model + '/', '/' + pat);
+    getPager(
+        model,
+        page,
+        'modelrows/' + model + '/' + col + '/' + op + '/',
+        '/' + pat
+    );
+}
+
+function doHttpRequest (form) {
+    var meth = $('#http-console-meth', form).val();
+    var url = $('#http-console-url', form).val();
+    var content = $('#http-console-body', form).val();
+    var canonUrl = url.replace(/^\/=\//, '').replace(/^\/+/, '');
+    url = '/=/' + canonUrl;    //alert(meth + " " + url);
+    if (url != canonUrl) {
+        $('#http-console-url', form).val(canonUrl);
+    }
+    /*
+    if ( ! /^\/=\//.test(url) ) {
+        alert("URL not start with /=/");
+        return;
+    }
+    */
+
+    if ( content != undefined && content != "" ) {
+        res = JSON.parse(content);
+        if (res == false && typeof res == typeof false && content != false) {
+            error("Invalid JSON for the column's default value: " + content);
+            return;
+        }
+        content = res;
+    }
+
+    setStatus(true, 'doHttpRequest');
+    openresty.callback = renderHttpConsoleRes;
+    openresty.formId = 'http-console-dummy-form';
+    try {
+        if (meth == "GET")
+            openresty.get(url);
+        else if (meth == "POST")
+            openresty.post(url, content);
+        else if (meth == "PUT")
+            openresty.put(url, content);
+        else if (meth == "DELETE")
+            openresty.del(url, content);
+        else {
+            error("Unknown HTTP method: " + meth);
+            setStatus(false, 'doHttpRequest');
+        }
+    } catch (e) {
+        error("Failed to perform HTTP request: " + e);
+        setStatus(false, 'doHttpRequest');
+    }
+}
+
+function renderHttpConsoleRes (res) {
+    setStatus(false, 'doHttpRequest');
+    if (typeof res == 'object') res = JSON.stringify(res);
+    //alert(res);
+    $("#http-console-out").text(res);
+}
+
+function getConsoles () {
+    $("#menu").html(
+        Jemplate.process(
+            'menu.tt',
+            { active_item: 'Consoles', submenu: [] }
+        )
+    ).postprocess();
+
+    $("#main").html(
+        Jemplate.process(
+            'console.tt'
+        )
+    ).postprocess();
 }
 
 function getRoleRules (name) {
@@ -373,21 +455,15 @@ function afterDeleteRoleRule (res, role, id, nextPage) {
     gotoNextPage(nextPage);
 }
 
-function searchRows () {
+function searchRows (model) {
     var pat = $("#search-box-input").val();
+    var col = $("#search-in").val();
+    var op = $("#search-op").val();
+    //alert(col);
     if (!pat) pat = '~';
     var anchor = savedAnchor;
-    var matches = anchor.match(/^modelrows\/(\w+)\/\d+\/(.*)$/);
-    if (matches) {
-        var model = matches[1];
-        anchor = 'modelrows/' + model + '/1/' + pat;
-    } else {
-        matches = anchor.match(/^modelrows\/\w+\/\d+$/);
-        if (matches)
-            anchor += '/' + pat;
-        else
-            return;
-    }
+    anchor = 'modelrows/' + model + '/' + col + '/' + op + '/1/' + pat;
+    //alert(anchor);
     gotoNextPage(anchor);
 }
 
@@ -639,19 +715,137 @@ function afterCreateACLRule (res) {
     }
 }
 
-function deleteAllModelRows (model) {
+function deleteAllModelRows (model, col, op, fmt, pat) {
     //alert("No implemented yet!");
     if (confirm("Are you sure to remove all the rows in model \""
                 + model + "\"?")) {
         openresty.callback = afterDeleteAllModelRows;
         delete cachedModelCount[model];
-        openresty.del("/=/model/" + model + "/~/~");
+        var anchor = savedAnchor;
+        if (pat == null) {
+            var matches = anchor.match(/^modelrows\/\w+\/(\w+)\/(\w+)\/\d+\/(.*)$/);
+            if (matches) {
+                col = matches[1];
+                op = matches[2];
+                pat = matches[3];
+                if (/\%[A-Za-z0-9]{2}/.test(pat))
+                    pat = decodeURIComponent(pat);
+            } else {
+                pat = '~';
+            }
+        }
+        openresty.del('/=/model/' + model + '/' + (col == '_all' ? '~' : col) + '/' + encodeURIComponent(pat), {_op: op }); 
+       /* openresty.del("/=/model/" + model + "/~/~");*/
     }
 }
 
 function afterDeleteAllModelRows (res) {
     alert(JSON.stringify(res));
     gotoNextPage();
+}
+
+function dumpModelRows (model, col, op, fmt, pat, page) {
+    var anchor = savedAnchor;
+    if (page == null) page = 1;
+    if (pat == null) {
+        var matches = anchor.match(/^modelrows\/\w+\/(\w+)\/(\w+)\/\d+\/(.*)$/);
+        if (matches) {
+            col = matches[1];
+            op = matches[2];
+            pat = matches[3];
+            if (/\%[A-Za-z0-9]{2}/.test(pat))
+                pat = decodeURIComponent(pat);
+        } else {
+            pat = '~';
+        }
+    }
+    setStatus(true, 'dumpModelRows');
+    $("#new-row").html(
+        Jemplate.process('model-dump-res.tt')
+    );
+    $("#export-cancel").show();
+    dumpedModelRows = '';
+    document.getElementById('model-dump-res').value = "Please wait...";
+    cancelDumpModelRows = false;
+    dumpModelRowsKeys = [];
+    //debug("page 1: " + page);
+    dumpModelRowsHelper(model, col, op, fmt, pat, page);
+}
+
+function dumpModelRowsHelper (model, col, op, fmt, pat, page) {
+    if (cancelDumpModelRows) {
+        $("#export-results").append('<span class="good">...Cancelled!</span>');
+        document.getElementById('model-dump-res').value = dumpedModelRows;
+        $("#export-cancel").hide();
+        return;
+    }
+    openresty.callback = function (res) {
+        afterDumpModelRows(res, model, col, op, fmt, pat, page);
+    };
+    //debug("page 2: " + page);
+    openresty.get(
+        '/=/model/' + model + '/' + (col == '_all' ? '~' : col)
+            + '/' + encodeURIComponent(pat),
+        { _offset: itemsPerPage * (page - 1), _count: itemsPerPage, _order_by: 'id:desc', _op: op }
+    );
+}
+
+function toCSV (value) {
+    return value == null ? "" : '"' + value.replace(/\\/, '\\\\', 'g')
+        .replace(/\n/, '\\n', 'g')
+        .replace(/\t/, '\\t', 'g')
+        .replace(/\r/, '\\r', 'g')
+        .replace(/"/, '\\"', 'g') + '"'
+}
+
+function afterDumpModelRows (res, model, col, op, fmt, pat, page) {
+    setStatus(false, 'dumpModelRows');
+    if ( ! openresty.isSuccess(res)) {
+        $("#export-results").append(
+            '<span class="error">Failed to import: ' +
+            res.error + '</span>'
+        );
+        document.getElementById('model-dump-res').value = dumpedModelRows;
+        $("#export-cancel").hide();
+        return false;
+    }
+    var exported = (page - 1) * itemsPerPage + res.length;
+    $("#export-results").html(
+        '<span class="good">Exported ' + exported + ' </span>'
+    );
+
+    if (fmt == "csv" && dumpModelRowsKeys.length == 0 && res.length > 0) {
+        var keys = [];
+        for (var key in res[0]) {
+            //alert(key);
+            dumpModelRowsKeys.push(key);
+            keys.push( toCSV(key) );
+        }
+        dumpedModelRows = keys.join(',') + "\n";
+    }
+    //debug(JSON.stringify(dumpModelRowsKeys));
+    for (var i = 0; i < res.length; i++) {
+        var row = res[i];
+        var values = [];
+        if (fmt == "csv") {
+            for (var j = 0; j < dumpModelRowsKeys.length; j++)
+                values.push( toCSV(row[ dumpModelRowsKeys[j] ]) );
+            dumpedModelRows += values.join(",") + "\n";
+        } else {
+            dumpedModelRows += JSON.stringify(row) + "\n";
+        }
+    }
+    if (res.length < itemsPerPage) {
+        $("#export-results").append('<span class="good">...Done!</span>');
+        document.getElementById('model-dump-res').value = dumpedModelRows;
+        $("#export-cancel").hide();
+        return;
+    }
+    if (exported >= dumpModelRowsLimit) {
+        error("Too many rows exported (more than " + dumpModelRowsLimit + "). Cancelling...");
+        cancelDumpModelRows = true;
+    }
+    dumpModelRowsHelper(model, col, op, fmt, pat, page + 1);
 }
 
 function getModelBulkRowForm (model) {
@@ -661,45 +855,109 @@ function getModelBulkRowForm (model) {
             { model: model }
         )
     );
+    $("#import-step").val(linesPerBulk);
+    $("textarea.row-input").focus();
 }
 
 function createModelBulkRow (model) {
+    setStatus(true, 'createModelBulkRow');
     var data = $("form#create-row-bulk-form>textarea").val();
+    ignoreImportId = $("#import-ignore-id").attr("checked");
+    //debug(ignoreImportId);
     //alert(data);
-    if (!data) { alert("No lines found!"); return; }
+    if (!data) { error("No lines found!"); return; }
     var lines = data.split(/\n/);
-    var resLines = [];
-    for (var i = 0; i < lines.length; i++) {
-        value = lines[i];
-        if (/^\s*$/.test(value)) continue;
-        var res = JSON.parse(value);
+    var count = lines.length;
+    if (count == 0) return false;
+
+    delete cachedModelCount[model];
+    for (var i = 0; i < count; i++) {
+        if (/^\s*$/.test(lines[i])) { lines[i] = null; continue; }
+        var res = JSON.parse(lines[i]);
         if (res == false && typeof res == typeof false && value != false) {
-            error("Invalid JSON value for line " + (i+1) + ": " + value);
+            $("#import-results").html(
+                '<span class="error">Invalid JSON value for line ' +
+                    (i+1) + ": " + lines[i] +
+                '</span>'
+            );
+            setStatus(false, 'createModelBulkRow');
             return false;
         }
-        resLines.push(value);
     }
-    var json = "[" + resLines.join(",") + "]";
-    //alert(json);
-    setStatus(true, 'createModelBulkRow');
-    delete cachedModelCount[model];
-    openresty.formId = 'dummy-form';
-    openresty.callback = afterCreateModelBulkRow;
-    openresty.post("/=/model/" + model + "/~/~", JSON.parse(json));
-    //alert("HERE! ;)");
+
+    var num = $("#import-step").val();
+    if ( ! /^\d+$/.test(num) && ! /^0+$/.test(num) ) {
+        alert("Invalid step value: " + num);
+        return false;
+    }
+    linesPerBulk = parseInt(num);
+    cancelInsertRows = false;
+    insertRows(model, lines, 0, count);
     return false;
 }
 
-function afterCreateModelBulkRow (res) {
-    //alert("HERE!");
-    setStatus(false, 'createModelBulkRow');
-    if (openresty.isSuccess(res)) {
-        $("form#create-row-bulk-form>textarea").val('');
-        gotoNextPage();
-    } else {
-        alert("Failed to import: " + res.error);
+function insertRows (model, lines, pos, count) {
+    //debug("cancel? " + cancelInsertRows);
+    if (cancelInsertRows) return false;
+    var resLines = [];
+    for (; pos < count; pos++) {
+        //var value = lines[pos];
+        if (lines[pos] == null) continue;
+        var row = JSON.parse(lines[pos]);
+        lines[pos] = null; // to force GC
+
+        if (ignoreImportId) {
+            delete row.id;
+        }
+        resLines.push(row);
+        if (resLines.length >= linesPerBulk)
+            break;
     }
-    //$("#import-results").html(JSON.stringify(res));
+    if (resLines.length == 0) {
+        setStatus(false, 'createModelBulkRow');
+        gotoNextPage();
+        return;
+    }
+    //debug(resLines.length);
+
+    //alert(json);
+    //var pos = i + 0;
+    //debug("outer: " + pos);
+    openresty.callback = function (res) {
+        //debug("inner: " + pos);
+        //debug(pos);
+        afterCreateModelBulkRow(res, model, lines, pos, count);
+    };
+    openresty.formId = 'dummy-form';
+    openresty.post("/=/model/" + model + "/~/~", resLines);
+}
+
+function afterCreateModelBulkRow (res, model, lines, pos, count) {
+    //alert("HERE!");
+    //setStatus(false, 'createModelBulkRow');
+    if ( ! openresty.isSuccess(res)) {
+        setStatus(false, 'createModelBulkRow');
+        $("#import-results").html(
+            '<span class="error">Failed to import: between rows ' +
+            (pos - linesPerBulk + 2) + ' ~ ' + (pos+1)
+            + ": " + res.error + '</span>'
+        );
+        return false;
+    }
+    var num = pos + 1;
+    var ratio = Math.floor( num * 100 / count );
+    $("#import-results").html(
+        '<span class="good">Inserted ' + ratio + '% (' + num +
+            ' out of ' + count +
+            ' rows) <a class="cancel" href="javascript:void(0);" onclick="cancelInsertRows = true;">Cancel</a></span>'
+    );
+    if (num >= count) {
+        setStatus(false, 'createModelBulkRow');
+        gotoNextPage();
+        return;
+    }
+    insertRows(model, lines, pos, count);
+    //$("form#create-row-bulk-form>textarea").val('');
     //alert(JSON.stringify(res));
 }
 
@@ -916,6 +1174,27 @@ function afterCreateParam (res) {
         error("Failed to add a new parameter: " + res.error);
     } else {
         gotoNextPage();
+    }
+}
+
+function runActionConsole (console, format) {
+    //alert(console.value);
+    setStatus(true, 'runActionConsole');
+    $("#run-action-console-error").empty();
+    openresty.callback = afterRunActionConsole;
+    openresty.postByGet(
+        '/=/action/RunAction/~/~.' + format.value,
+        console.value
+    );
+}
+
+function afterRunActionConsole (res) {
+    setStatus(false, 'runActionConsole');
+    if (!openresty.isSuccess(res)) {
+        $("#run-action-console-error").text("Failed to run action: " + res.error);
+    } else {
+        if (typeof res == 'object') res = JSON.stringify(res);
+        $("#action-console-out").text(res);
     }
 }
 

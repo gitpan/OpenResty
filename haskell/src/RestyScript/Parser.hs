@@ -71,7 +71,9 @@ opTable = [
                 relOp "<<=", relOp "<<", relOp ">>=", relOp ">>",
                 relOp ">=", relOp ">",
                 relOp "<=", relOp "<>", relOp "<",
-                relOp "=", relOp "!=", relOp' "like"
+                relOp "=", relOp "!=", relOp' "like",
+                relOp' "is not",
+                relOp' "is"
                 ],
             [   preOp' "not" Not ],
             [
@@ -119,8 +121,15 @@ parseArithAtom = parseNumber
                 notFollowedBy (char '.' <|> char '(');
                 return r })
              <|> try (parseFuncCall)
+             <|> try(parseArrayIndex)
              <|> parseColumn
              <|> parens parseExpr
+
+parseArrayIndex :: Parser RSVal
+parseArrayIndex = do
+    array <- (parseColumn <|> parens parseExpr)
+    ind   <- between (char '[' >> spaces) (char ']' >> spaces) parseExpr
+    return $ ArrayIndex array ind
 
 parseBool :: Parser RSVal
 parseBool = (keyword "true" >> spaces >> return RSTrue)
@@ -158,9 +167,10 @@ parseAnyColumn = do char '*'
 parseVariable :: Parser RSVal
 parseVariable = do char '$'
                    pos <- getPosition
+                   prefix <- option "" $ string "_"
                    v <- symbol
                    spaces
-                   return $ Variable pos v
+                   return $ Variable pos $ prefix ++ v
 
 parseNumber :: Parser RSVal
 parseNumber = try (parseFloat)
@@ -212,11 +222,6 @@ parseColumn = do a <- parseIdent
                     Empty -> Column a
                     otherwise -> QualifiedColumn a b
           <?> "column"
-
-parseSet :: Parser RSVal
-parseSet = try(parseFuncCall)
-        <|> parseModel
-        <?> "model"
 
 parseModel :: Parser RSVal
 parseModel = liftM Model parseIdent

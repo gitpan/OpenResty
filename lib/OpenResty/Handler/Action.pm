@@ -4,11 +4,13 @@ package OpenResty::Handler::Action;
 use strict;
 use warnings;
 
+use LWP::UserAgent;
 use OpenResty::Util;
 use Params::Util qw( _HASH _STRING );
 use OpenResty::RestyScript;
 use OpenResty::Limits;
-use JSON::XS;
+use JSON::XS ();
+use LWP::UserAgent ();
 use Data::Dumper qw(Dumper);
 use OpenResty::QuasiQuote::SQL;
 use OpenResty::QuasiQuote::Validator;
@@ -22,7 +24,8 @@ sub level2name {
     qw< action_list action action_param action_exec  >[$_[-1]]
 }
 
-my $json = JSON::XS->new->utf8;
+my $ua = LWP::UserAgent->new;
+$ua->timeout(2);
 
 sub POST_action_exec {
     my ( $self, $openresty, $bits ) = @_;
@@ -258,6 +261,13 @@ sub exec_user_action {
     }
     my ($params, $canon_cmds) = @$compiled;
 
+    $args->{_ACCOUNT} = $openresty->current_user;
+    $args->{_ROLE} = $openresty->get_role;
+    $params->{_ROLE} = $params->{_ACCOUNT} = {
+        used => 1,
+        type => 'literal',
+    };
+
     #### $params
     my @missed_args;
     while (my ($name, $param) = each %$params) {
@@ -267,13 +277,18 @@ sub exec_user_action {
             # Some parameter were not given
             push @missed_args, $name if $param->{used};
         }
-        $args->{ $name } = $val || $param->{default_value};
+        if (!defined $val) { $val = $param->{default_value}; }
+        $args->{ $name } = $val;
     }
     if (@missed_args) {
         die "Arguments required: @missed_args\n";
     }
 
+    my $account = $openresty->current_user;
+    #### %OpenResty::AllowForwarding
+    my $allow_forwarding = $OpenResty::AllowForwarding{$account};
     #### $canon_cmds
+    #warn "Allow: $allow_forwarding";
     my @outputs;
     for my $cmd (@$canon_cmds) {
         $i++;
@@ -282,32 +297,35 @@ sub exec_user_action {
 
             # Proceeds variable value substitutions
             $url     = join_frags_with_args( $url, $params, $args );
-            $content = join_frags_with_args( $content, $params, $args, sub { $OpenResty::JsonXs->encode($_[0]) });
+            $content = join_frags_with_args(
+                $content, $params, $args,
+                \&OpenResty::json_encode,
+            );
             #### $url
             #### $content
 
-  # DO NOT permit cross-domain HTTP method!!!
-  #            if ($url !~ m{^/=/}) {
-  #                die "Error in command $i: url does not start by \"/=/\"\n";
-  #            }
+            if ($url =~ m{^/=/}) {
+                local %ENV;
+                $ENV{REQUEST_URI}    = $url;
+                $ENV{REQUEST_METHOD} = $http_meth;
+                (my $query = $url) =~ s/(.*?\?)//g;
+                #$query .= '&';
+                #warn "Query: $query\n";
+                $ENV{QUERY_STRING} = $query;
 
-            local %ENV;
-            $ENV{REQUEST_URI}    = $url;
-            $ENV{REQUEST_METHOD} = $http_meth;
-            (my $query = $url) =~ s/(.*?\?)//g;
-            #$query .= '&';
-            #warn "Query: $query\n";
-            $ENV{QUERY_STRING} = $query;
-
-            my $cgi = new_mocked_cgi( $url, $content );
-            my $call_level = $openresty->call_level;
-            $call_level++;
-            my $account = $openresty->current_user;
-            my $res
-                = OpenResty::Dispatcher->process_request( $cgi, $call_level,
-                $account );
-            push @outputs, $res;
-
+                my $cgi = new_mocked_cgi( $url, $content );
+                my $call_level = $openresty->call_level;
+                $call_level++;
+                push @outputs,
+                    OpenResty::Dispatcher->process_request(
+                        $cgi, $call_level, $account
+                    );
+            } else { # absolute requests
+                if ( ! $allow_forwarding ) {
+                    die "Error in command $i: url does not start with \"/=/\"\n";
+                }
+                push @outputs, do_http_request($http_meth, \$url, \$content);
+            }
         } else {    # being a SQL method, $cmd->[0] is the fragments list
             my $pg_sql = join_frags_with_args( $cmd->[0], $params, $args );
 
@@ -325,6 +343,45 @@ sub exec_user_action {
         }
     }
     return \@outputs;
+}
+
+sub do_http_request {
+    my ($meth, $rurl, $rcontent) = @_;
+    #no strict 'subs';
+    #### $meth
+    my $url = $$rurl;
+    #### $url
+
+    my $req = HTTP::Request->new($meth);
+    $req->header('Content-Type' => 'text/plain');
+    $req->header('Accept', '*/*');
+    $req->url($$rurl);
+
+    my $res = $ua->request($req);
+        # judge result and next action based on $response_code
+    if ($res->is_success) {
+        my $content = $res->content;
+        my $type = $res->header('Content-Type');
+        if ($type !~ /^text\//) {
+            return {
+                success => 0, error => 'Text response expected.',
+            };
+        }
+
+        my $data;
+        eval {
+            $data = $OpenResty::JsonXs->decode($content);
+        };
+        if ($@) {
+            return $content;
+        } else {
+            return $data;
+        }
+    } else {
+        return {
+            success => 0, error => $res->status_line,
+        };
+    }
 }
 
 # Delete action with the given name, if the given action name is '~' then
@@ -448,7 +505,7 @@ sub new_action {
     }
 
     # Insert action definition into backend
-    my $compiled = $OpenResty::JsonXs->encode([ $params, $canon_cmds ]);
+    my $compiled = OpenResty::json_encode([ $params, $canon_cmds ]);
     my $sql = [:sql|
         insert into _actions (name, definition, description, compiled)
         values($action, $def, $desc, $compiled); |];
@@ -492,6 +549,13 @@ sub process_params_with_vars {
 
     my %used;
     for my $name ( keys(%$vars) ) {
+        if ($name =~ /^_/) {
+            if ($name =~ /^(?:_ACCOUNT|_ROLE)$/) {
+                next;
+            } else {
+                die "Unknown built-in parameter: $name\n";
+            }
+        }
         if (!exists $params->{$name}) {
             die "Parameter \"$name\" used in the action definition is not defined in the \"parameters\" list.\n"
         }
@@ -831,7 +895,7 @@ sub alter_action {
         $self->validate_model_names( $openresty, \@models );
 
         # Insert action definition into backend
-        my $compiled = $OpenResty::JsonXs->encode([ $params, $canon_cmds ]);
+        my $compiled = OpenResty::json_encode([ $params, $canon_cmds ]);
 
         $sql .= [:sql|
             update _actions
@@ -911,7 +975,7 @@ sub POST_action_param {
         $params->{$param}{default_value} = $default;
     }
 
-    $compiled = $OpenResty::JsonXs->encode($compiled);
+    $compiled = OpenResty::json_encode($compiled);
 
     my $id = $openresty->select(
         [:sql| select id from _actions where name = $action |]
@@ -1016,7 +1080,7 @@ sub PUT_action_param {
 
     # XXX TODO: add support for updating column's uniqueness
 
-    $compiled = $OpenResty::JsonXs->encode($compiled);
+    $compiled = OpenResty::json_encode($compiled);
     my $sql = $update_meta . [:sql|
         update _actions set compiled = $compiled where id = $id
     |];
@@ -1107,7 +1171,7 @@ sub DELETE_action_param {
     my $user = $openresty->current_user;
     $OpenResty::Cache->remove_has_action($user, $action);
 
-    $compiled = $OpenResty::JsonXs->encode($compiled);
+    $compiled = OpenResty::json_encode($compiled);
 
     my $res = $openresty->do($sql . [:sql|
         update _actions set compiled = $compiled where name = $action

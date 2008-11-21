@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.005000';
+our $VERSION = '0.005001';
 
 use strict;
 use warnings;
@@ -38,6 +38,9 @@ our (%AccountFiltered, %UnsafeAccounts);
 our $Cache;
 our $UUID = Data::UUID->new;
 
+# XXX we should really put this into the Action handler...
+our %AllowForwarding;
+
 our $JsonXs = JSON::XS->new->utf8->allow_nonref;
 
 our %OpMap = (
@@ -50,11 +53,18 @@ our %OpMap = (
     ne => '<>',
 );
 
+sub json_encode {
+    _utf8_on($_[0]);
+    local *_ = \( $JsonXs->encode($_[0]) );
+    _utf8_off($_[0]);
+    $_;
+}
+
 our %ext2dumper = (
     '.yml' => sub { _utf8_on($_[0]); YAML::Syck::Dump($_[0]); },
     '.yaml' => sub { _utf8_on($_[0]); YAML::Syck::Dump($_[0]); },
-    '.js' => sub { _utf8_on($_[0]); $JsonXs->encode($_[0]) },
-    '.json' => sub { _utf8_on($_[0]); $JsonXs->encode($_[0]) },
+    '.js' => \&json_encode,
+    '.json' => \&json_encode,
 );
 
 our %EncodingMap = (
@@ -122,8 +132,9 @@ sub init {
     if (!$Backend || !$Backend->ping) {
         warn "Re-connecting the database...\n";
         eval { $Backend->disconnect };
-        my $backend = $OpenResty::Config{'backend.type'};
-        OpenResty->connect($backend);
+        #my $backend = $OpenResty::Config{'backend.type'};
+        #OpenResty->connect($backend);
+        OpenResty::Dispatcher->init({});
         #die "Backend connection lost: ", $db_state, "\n";
     }
 
@@ -289,8 +300,9 @@ sub init {
 
         #warn "Content: ", $Dumper->($content);
         #warn "Data: ", $Dumper->($req_data);
-    }
-
+    } 
+    
+    # 
     $$rurl = $url;
     $self->{'_url'} = $url;
     $self->{'_http_method'} = $http_meth;
@@ -406,10 +418,18 @@ sub response {
     #warn $Dumper;
     #warn $ext2dumper{'.js'};
     $str =~ s/\n+$//s;
-    if (my $var = $self->{_var} and $self->{_dumper} eq $ext2dumper{'.js'}) {
-        $str = "$var=$str;";
-    } elsif (my $callback = $self->{_callback} and $self->{_dumper} eq $ext2dumper{'.js'}) {
-        $str = "$callback($str);";
+    if (my $var = $self->{_var}) {
+        if ($self->{_dumper} eq $ext2dumper{'.js'}) {
+            $str = "$var=$str;";
+        } else {
+            $str = "$var=" . OpenResty::json_encode($str) . ";";
+        }
+    } elsif (my $callback = $self->{_callback}) {
+        if ($self->{_dumper} eq $ext2dumper{'.js'}) {
+            $str = "$callback($str);";
+        } else {
+            $str = "$callback(" . OpenResty::json_encode($str) . ");";
+        }
     }
 
     #my $meth = $self->{_http_method};
@@ -623,6 +643,10 @@ sub set_role {
     $self->{_role} = $role;
 }
 
+sub get_role {
+    $_[0]->{_role}
+}
+
 sub url_param {
     if (@_ > 1) {
         $_[0]->{_url_params}->{$_[1]};
@@ -650,7 +674,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.5.0 released on September 27, 2008.
+This document describes OpenResty 0.5.1 released on November 21, 2008.
 
 =head1 DESCRIPTION
 

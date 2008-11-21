@@ -1,3 +1,19 @@
+.error {
+    color: red;
+    font-weight: bold;
+}
+
+.good {
+    color: green;
+    font-weight: bold;
+}
+
+.cancel {
+    color: black;
+    font-weight: bold;
+    margin-left: 2em;
+}
+
 .page-title {
     text-align: left;
     font-size: 14pt;
@@ -24,8 +40,6 @@ pre.view-def, pre.action-def {
 }
 
 textarea#create-view-def, textarea#create-action-def {
-    width: 250px;
-    height: 10em;
     margin-left: 2em;
 }
 
@@ -73,7 +87,7 @@ input.column-input, input.action-input {
     padding: 5px;
     text-align: left;
     display: block;
-    width: 100px;
+    width: 35em;
     /*float:left;
     z-index:2;*/
     font-family:tahoma,arial,helvetica,sans-serif;

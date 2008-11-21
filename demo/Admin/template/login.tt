@@ -36,7 +36,7 @@
             <table>
                 <tr>
                 <td>
-            <div><a href="http://www.yahoo.cn"><img src="http://cn.yimg.com/i/os/v004/ylg.gif" alt="中国雅虎"></a></div>
+            <div><!--<a href="http://www.yahoo.cn"><img src="http://cn.yimg.com/i/os/v004/ylg.gif" alt="中国雅虎"></a>--></div>
                 </td>
                 <td>
                     <span class="page-title">OpenResty Admin site</span>
@@ -120,6 +120,8 @@
     </ul>
     </div>
     <p>OpenResty is <a href="http://search.cpan.org/dist/OpenResty">opensourced on CPAN</a> under a permissive <a href="http://opensource.org/licenses/artistic-license-2.0.php">Artistic 2 License</a>.</p>
+    <br/>
+    <p>Join us via IRC on <code>#openresty</code> of <code>irc.freenode.net</code> ;)</p>
     </div>
 
 </div>

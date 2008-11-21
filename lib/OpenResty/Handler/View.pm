@@ -172,12 +172,20 @@ sub exec_view {
     if ($fix_var ne '~' and $fix_var_value ne '~') {
         $vars{$fix_var} = $fix_var_value;
     }
+    my $role = $openresty->get_role;
+
+    # yup...this part is hacky...we'll remove it once we have views running on the Haskell compiler...
+    $view_def =~ s/\$_ACCOUNT\b/Q($user)/seg;
+    $view_def =~ s/\$_ROLE\b/Q($role)/seg;
+    #warn $view_def;
 
     my $res;
     eval {
         $res = $select->parse(
             $view_def,
-            { quote => \&Q, quote_ident => \&QI, vars => \%vars }
+            { quote => \&Q,
+              quote_ident => \&QI,
+              vars => \%vars },
         );
     };
     if ($@) {
@@ -188,6 +196,7 @@ sub exec_view {
     if (@unbound) {
         die "Parameters required: @unbound\n";
     }
+    #warn "view SQL: ", $res->{sql}, "\n";
     return $openresty->select($res->{sql}, { use_hash => 1, read_only => 1 });
 
 }

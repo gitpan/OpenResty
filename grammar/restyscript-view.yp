@@ -115,10 +115,23 @@ type: symbol
     ;
 
 atom: proc_call
+    | array_index
     | column
     | true_literal
     | true_number
     ;
+
+array_index: column '[' expr ']'
+             { join(' ', @_[1..$#_]) }
+           | '(' expr ')' '[' expr ']'
+             { join(' ', @_[1..$#_]) }
+           ;
+
+array_index2: column '[' expr2 ']'
+             { join(' ', @_[1..$#_]) }
+           | '(' expr2 ')' '[' expr2 ']'
+             { join(' ', @_[1..$#_]) }
+           ;
 
 proc_call: IDENT '(' parameter_list ')'
              { join(' ', @_[1..$#_]) }
@@ -159,9 +172,12 @@ atom2: proc_call2
     | column
     | literal
     | true_number
+    | array_index2
     ;
 
-proc_call2: IDENT '(' parameter_list2 ')'
+proc_call2: IDENT '(' ')'
+             { join(' ', @_[1..$#_]) }
+         | IDENT '(' parameter_list2 ')'
              { join(' ', @_[1..$#_]) }
          | IDENT '(' '*' ')'
              { join(' ', @_[1..$#_]) }
@@ -447,7 +463,7 @@ sub _Lexer {
                 and return (lc($1), lc($1));
         s/^\s*([A-Za-z][A-Za-z0-9_]*)\b//s
                 and return ('IDENT', $1);
-        s/^\$(\w+)//s
+        s/^\$([A-Za-z]\w*|_ACCOUNT|_ROLE)\b//s
                 and return ('VAR', $1);
         s/^\s*(\S)//s
                 and return ($1, $1);
