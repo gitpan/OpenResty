@@ -13,7 +13,7 @@
 %]
 
 [% BLOCK editable_model_value -%]
-<span class="editable" [% is_json ? 'resty_json="1"' : "" %] resty_path="model/[% model.name %][% column ? "/" _ column : "" | html %]" resty_key="[% key | html %]" resty_value="[% value | html %]">[% value | html %]</span>
+<span class="editable" [% is_json ? 'resty_json="1"' : "" %] resty_path="model/[% model.name %][% column ? "/" _ column : "" | html %]" resty_key="[% key | html %]" resty_value="[% resty_value | html %]" resty_type="[% resty_type |html %]">[% value | html %]</span>
 [% END -%]
 
 <!-- block begin -->
@@ -31,9 +31,18 @@
             <ul id="create-column">
             [%- FOREACH column IN model.columns %]
                 <li>
-              [%- FOREACH key IN column.keys %]
+              [%- first_time = 1;
+                  col_names = column.keys.sort;
+                  col_names = col_names.unshift('name');
+                FOREACH key IN col_names %]
+                [% NEXT IF NOT first_time AND key == 'name' %]
+                [% IF first_time %]
+                    [% first_time = 0 %]
+                [% END %]
                 [%- value = column.$key; %]
-                [%- is_json = key == 'default' ? 1 : 0 %]
+                [%- is_json = 0 %]
+                [%- resty_type = (key == 'unique' || key == 'not_null') ? 'select':'text' %]
+                [%- resty_value = (key == 'unique' || key =='not_null') ? '{true:"true",false:"false","selected":true}': value %]
                 <b class="key">[%- key | html %]</b>: [% INCLUDE editable_model_value column=column.name %] &nbsp;&nbsp;
               [%- END %]
                 <b><a class="show-detail" href="javascript:void(0);" onclick="deleteModelColumn('[% model.name %]', '[% column.name %]')">Delete</a></b>

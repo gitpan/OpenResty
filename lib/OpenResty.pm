@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.005001';
+our $VERSION = '0.005002';
 
 use strict;
 use warnings;
@@ -107,6 +107,7 @@ sub new {
         _call_level => $call_level,
         _dumper => $Dumper,
         _importer => $Importer,
+        _http_status => 'HTTP/1.1 200 OK'
     }, $class;
 }
 
@@ -127,41 +128,30 @@ sub init {
     my ($self, $rurl) = @_;
     my $class = ref $self;
     my $cgi = $self->{_cgi};
+    my $client_ip = $cgi->remote_host();
 
-    #warn "DB state: $db_state\n";
     if (!$Backend || !$Backend->ping) {
         warn "Re-connecting the database...\n";
         eval { $Backend->disconnect };
-        #my $backend = $OpenResty::Config{'backend.type'};
-        #OpenResty->connect($backend);
         OpenResty::Dispatcher->init({});
-        #die "Backend connection lost: ", $db_state, "\n";
     }
 
     # cache the results of CGI::Simple::url_param
-    #$self->{_url_params} = $self->{_url{};
     my (%url_params, %builtin_params);
+
     my $cgi2 = bless {}, 'CGI::Simple';
-    #die $ENV{'QUERY_STRING'};
     $cgi2->_parse_params( $ENV{'QUERY_STRING'} );
-    #return $self->{'.url_param'}->param( $param );
-    #use Data::Dumper;
-    #warn Dumper($cgi2);
     for my $param ($cgi2->param) {
-        #die $param;
         if ($param =~ /^[A-Za-z]\w*$/) {
             $url_params{$param} = $cgi2->param($param);
         } elsif ($param =~ /^_\w+/) {
             $builtin_params{$param} = $cgi2->param($param);
         }
     }
+    $builtin_params{_client_ip} = $client_ip;
+
     $self->{_url_params} = \%url_params;
     $self->{_builtin_params} = \%builtin_params;
-
-    #### params: $self->{_url_params}
-    #### use_cookie: $self->builtin_param('_use_cookie')
-    #### session: $self->builtin_param('_session')
-
     $self->{_use_cookie}  = $self->builtin_param('_use_cookie') || 0;
     $self->{_session}  = $self->builtin_param('_session');
 
@@ -180,9 +170,6 @@ sub init {
         for my $enc (@enc) {
             my $decoder = guess_encoding($data, $enc);
             if (ref $decoder) {
-    #            if ($enc ne 'ascii') {
-    #                print "line $.: $enc message found: ", $decoder->decode($s), "\n";
-    #            }
                 $charset = $decoder->name;
                 $charset = $EncodingMap{$charset} || $charset;
                 last;
@@ -224,9 +211,6 @@ sub init {
     $self->{_limit} = $limit;
 
     my $http_meth = $ENV{REQUEST_METHOD};
-    #$self->{'_method'} = $http_meth;
-
-    #die "#XXXX !!!! $http_meth", Dumper($self);
 
     my $url = $$rurl;
     if ($charset ne 'UTF-8') {
@@ -300,9 +284,9 @@ sub init {
 
         #warn "Content: ", $Dumper->($content);
         #warn "Data: ", $Dumper->($req_data);
-    } 
-    
-    # 
+    }
+
+    #
     $$rurl = $url;
     $self->{'_url'} = $url;
     $self->{'_http_method'} = $http_meth;
@@ -351,6 +335,10 @@ sub warning {
     $_[0]->{_warning} = $_[1];
 }
 
+sub http_status {
+    $_[0]->{_http_status} = $_[1];
+}
+
 sub response {
     my $self = shift;
     if ($self->{_no_response}) { return; }
@@ -369,8 +357,9 @@ sub response {
     my $use_gzip = $OpenResty::Config{'frontend.use_gzip'} &&
         index($ENV{HTTP_ACCEPT_ENCODING} || '', 'gzip') >= 0;
     #warn "use gzip: $use_gzip\n";
-
-    print "HTTP/1.1 200 OK\n";
+    my $http_status = $self->{_http_status};
+    print "$http_status\n";
+    # warn "$http_status";
     my $type = $self->{_type} || 'text/plain';
     #warn $s;
     my $str = '';
@@ -578,12 +567,9 @@ sub has_model {
         #warn "has model cache HIT\n";
         return 1;
     }
-    my $sql = [:sql|
-        select id
-        from _models
-        where name = $model
-        limit 1;
-    |];
+    my $sql = [:sql| select c.oid from pg_catalog.pg_class c left join pg_catalog.pg_namespace n on n.oid = c.relnamespace where c.relkind in ('r','') and n.nspname <> 'pg_catalog' and n.nspname !~ '^pg_toast' and pg_catalog.pg_table_is_visible(c.oid) and substr(c.relname,1,1) <> '_' and c.relname = $model limit 1|];
+
+
     my $ret;
     eval { $ret = $self->select($sql)->[0][0]; };
     if ($ret) { $Cache->set_has_model($user, $model) }
@@ -674,7 +660,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.5.1 released on November 21, 2008.
+This document describes OpenResty 0.5.2 released on November 27, 2008.
 
 =head1 DESCRIPTION
 
@@ -880,15 +866,21 @@ For a complete list of the contributors, please see L<http://svn.openfoundry.org
 
 =head1 License and Copyright
 
-Copyright (c) 2007, 2008 by Yahoo! China EEEE Works, Alibaba Inc.
+Copyright (C) 2007-2008   Yahoo! China EEEE Works, Alibaba Inc
 
-This module is free software; you can redistribute it and/or
-modify it under the Artistic License 2.0.
-A copy of this license can be obtained from
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 
-L<http://opensource.org/licenses/artistic-license-2.0.php>
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-THE PACKAGE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES. THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT ARE DISCLAIMED TO THE EXTENT PERMITTED BY YOUR LOCAL LAW. UNLESS REQUIRED BY LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR WILL BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THE PACKAGE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 =head1 SEE ALSO
 

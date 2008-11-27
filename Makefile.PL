@@ -3,7 +3,7 @@ use lib '.';
 use inc::Module::Install;
 
 name                ('OpenResty');
-license             ('artistic2');
+license             ('GPLv2');
 author              ('Agent Zhang <agentzh@yahoo.cn>');
 perl_version        ('5.006001');
 all_from            ('lib/OpenResty.pm');
@@ -96,6 +96,7 @@ if (-f 'haskell/bin/restyscript') {
 
 use_test_base();
 no_index( directory => qw< etc misc tmp demo minisql clients doc t > );
+tests('t/*.t t/col-not-null/*.t t/col-unique/*.t');
 
 auto_install();
 

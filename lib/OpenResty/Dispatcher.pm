@@ -27,14 +27,14 @@ if ($url_prefix) {
 
 sub init {
     my ($class, $opts) = @_;
-    
+
     my $context = $opts->{context};
     if (defined $context) {
         $Context = $context;
     } else {
         $context = $Context;
     }
-    
+
     undef $InitFatal;
 
     eval {
@@ -43,10 +43,10 @@ sub init {
         $OpenResty::Cache = OpenResty::Cache->new;
         OpenResty->connect($backend);
     };
-    if ($@) { 
-        # warn $@; 
-        $InitFatal = $@; 
-        return; 
+    if ($@) {
+        # warn $@;
+        $InitFatal = $@;
+        return;
     }
     #warn "InitFatal: $InitFatal\n";
 
@@ -123,7 +123,7 @@ sub process_request {
     if ($InitFatal) {
         # warn "Init error: $InitFatal";
         warn "Found init fatal error. Now we re-init the dispatcher...\n";
-        
+
         $class->init({'context' => $Context});
     }
 
@@ -179,18 +179,18 @@ sub process_request {
 
     map { s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg; } @bits;
     ## @bits
-    
+
     my $fst = shift @bits;
     if ($fst ne '=') {
         return $openresty->fatal("URLs must be led by '=': $url");
     }
-    
+
     my $key = $bits[0];
     if (!defined $key) { $key = $bits[0] = 'version'; }
 
     if (scalar(@bits) == 4 && $bits[2] =~ m{^_\w+} ) {
         # warn $openresty->{_builtin_params};
-        $openresty->{_builtin_params}->{$bits[2]} = $bits[3]; 
+        $openresty->{_builtin_params}->{$bits[2]} = $bits[3];
         $bits[2] = '~';
         $bits[3] = '~';
     }

@@ -147,7 +147,8 @@ _EOC_
     ],
     [ '0.005' => '' ],
     [ '0.006' => '' ],  # v0.4.0
-    [ '0.007' => '' ],  # v0.5.0 & v0.5.1
+    [ '0.007' => '' ],  # v0.5.0
+    [ '0.008' => '' ],
 );
 
 our @LocalVersionDelta = (
@@ -285,7 +286,47 @@ begin
 end
 $$ language plpgsql;
 _EOC_
+   [ '0.008' => <<'_EOC_' ],
+create or replace function _upgrade() returns integer as $$
+declare
+    model_sql varchar;
+    col_sql   varchar;
+    model_rec record;
+    col_rec   record;
+begin
+    -- loop to comment all model's all column
+    model_sql := 'select name, description from _models';
+    -- loop for per model
+    for model_rec in execute model_sql loop
+       execute 'comment on table ' || quote_ident(model_rec.name) || ' is ' || quote_literal(model_rec.description) || ';';
+       execute 'comment on column ' || quote_ident(model_rec.name) || '.id is ' || quote_literal('ID') || ';';
+       col_sql := 'select name, label from _columns where model = ' || quote_literal(model_rec.name) || ';';
+       -- loop for per column except id
+       for col_rec in execute col_sql loop
+          execute 'comment on column ' || quote_ident(model_rec.name) || '.' || quote_ident(col_rec.name) || ' is ' || quote_literal(col_rec.label) || ';';
+       end loop;
+    end loop;
 
+    -- create _ylogins table for ylogin model
+    create table _ylogins(
+        id serial primary key,
+        name text unique not null,
+        mapping_view text,
+        on_register text not null,
+        on_login text,
+        next_page text not null,
+        error_page text not null,
+        description text,
+        created timestamp(0) with time zone default now()
+    );
+
+   -- create index for _access table
+    create index idx_query_for_acl on _access(role, method, segments);
+
+    return 0;
+end;
+$$ language plpgsql;
+_EOC_
 );
 
 sub upgrade_all {
