@@ -41,8 +41,8 @@ $.fn.postprocess = function (className, options) {
                 //debug(type);
                 if (!type) {
                     type = 'text';
-                } 
-                
+                }
+
                 if (type != 'select' && ((data && data.length > 30) || /\n/.test(data))) {
                     type = 'textarea';
                 }
@@ -54,8 +54,9 @@ $.fn.postprocess = function (className, options) {
                     settings.width = data ? (data.length + 5 + 'em') : '5em';
                 } else if (type == 'select') {
                     settings.width = '10em';
+                    settings.height = '6em';
                 } else {
-            
+
                 }
                 settings.data = data;
                 settings.type = type;
@@ -716,8 +717,9 @@ function createACLRule (role) {
     var method = $("#create-rule-method").val();
     var url = $("#create-rule-url").val();
     var prohibiting = $("#create-rule-prohibiting").val();
+    var applied_to = $("#create-rule-applied_to").val();
     setStatus(true, "createACLRule");
-    var data = { method: method, url: url };
+    var data = { method: method, url: url, applied_to: applied_to};
     if (prohibiting == "true")
         data.prohibiting = true;
     openresty.callback = afterCreateACLRule;

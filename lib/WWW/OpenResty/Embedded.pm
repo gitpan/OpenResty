@@ -68,7 +68,7 @@ sub delete {
 }
 
 sub request {
-    my ($self, $content, $method, $url, $params) = @_;
+    my ($self, $content, $method, $url, $params, $client_ip) = @_;
     !defined $params or _HASH0($params) or
         die "Params must be a hash: ", Dumper($params), "\n";
     if ($params && %$params) {
@@ -102,14 +102,14 @@ sub request {
     }
     my $timer = $self->{timer};
     $timer->start($method) if $timer;
-    my $res = _request($req);
+    my $res = _request($req, $client_ip);
     #my $res = $ua->request($req);
     $timer->stop($method) if $timer;
     return $res;
 }
 
 sub _request {
-    my ($req) = @_;
+    my ($req, $client_ip) = @_;
 
     my $http_meth = $req->method;
     $ENV{REQUEST_METHOD} = $req->method;
@@ -134,7 +134,8 @@ sub _request {
         ### My cookie: $ENV{COOKIE}
     }
 
-    my $cgi = new_mocked_cgi($uri, $req->content);
+    my $cgi = new_mocked_cgi($uri, $req->content, $client_ip);
+    # warn $cgi->remote_host();
     $Buffer = undef;
     OpenResty::Dispatcher->process_request($cgi);
     my $code;
@@ -142,8 +143,11 @@ sub _request {
     if (is_utf8($Buffer)) {
         $Buffer = encode('utf8', $Buffer);
     }
-    if ($Buffer =~ /^HTTP\/1\.[01] (\d+) (\w+)\n/) {
+    if ($Buffer =~ /^HTTP\/1\.[01] (\d+) (\w+)\r?\n/) {
         $code = $1;
+    } else {
+        $Buffer = "HTTP/1.1 200 OK\r\n$Buffer";
+        $code = 200;
     }
     my $res = HTTP::Response->parse($Buffer); # $code, $msg, $header, $content )
     ## $res
