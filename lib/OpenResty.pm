@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.005005';
+our $VERSION = '0.005006';
 
 use strict;
 use warnings;
@@ -675,7 +675,7 @@ sub builtin_param {
 1;
 __END__
 
-=encoding utf8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -683,7 +683,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.5.5 released on May 1, 2009.
+This document describes OpenResty 0.5.6 released on May 3, 2009.
 
 =head1 DESCRIPTION
 
@@ -945,6 +945,8 @@ L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=OpenResty>.
 =over
 
 =item Agent Zhang (agentzh) C<< <agentzh at yahoo dot cn> >>
+
+=item Xunxin Wan (万珣新) C<< <wanxunxin at gmail dot com > >>
 
 =item chaoslawful (王晓哲) C<< <chaoslawful at gmail dot com> >>
 
