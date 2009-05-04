@@ -1,5 +1,8 @@
 Change Log for OpenResty
 
+0.5.7 May 4 2009
+* added missing files to MANIFEST.
+
 0.5.6 May 3 2009
 * added docs OpenResty::Spec::Install::Apache and OpenResty::Spec::Install::Lighttd.
 
