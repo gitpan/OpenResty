@@ -1,6 +1,6 @@
 package OpenResty;
 
-our $VERSION = '0.005009';
+our $VERSION = '0.005010';
 
 use strict;
 use warnings;
@@ -683,7 +683,7 @@ OpenResty - General-purpose web service platform for web applications
 
 =head1 VERSION
 
-This document describes OpenResty 0.5.9 released on May 6, 2009.
+This document describes OpenResty 0.5.10 released on May 21, 2009.
 
 =head1 DESCRIPTION
 
@@ -891,9 +891,11 @@ L<http://github.com/agentzh/openresty/tree/master>
 There is anonymous access to all. If you'd like a commit bit, please let
 us know. :)
 
-=head1 IRC Channel
+=head1 Mailing list
 
-Join us via IRC on C<#openresty> of the irc.freenode.net server ;)
+Subscribe to the C<openresty> Google Group here:
+
+  L<http://groups.google.com/group/openresty>
 
 =head1 Project Roadmap
 
